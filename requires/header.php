@@ -1,4 +1,6 @@
- <?php require_once __DIR__ . '/../db.php'; ?>
+ <?php 
+ require_once __DIR__ . '/../db_plugin.php'; 
+ ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -33,7 +35,8 @@
         },
       });
     </script>
-
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- CSS Files -->
     <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
     <link rel="stylesheet" href="assets/css/plugins.min.css" />

@@ -24,8 +24,8 @@
               <a target="_blank" href="https://themewagon.com/">ThemeWagon</a>.
             </div>
           </div>
-        </footer>
-        </div>
+      </footer>
+    </div>
 
       <!-- Custom template | don't include it in your project! -->
       <div class="custom-template">
@@ -232,6 +232,7 @@
     <script src="assets/js/core/jquery-3.7.1.min.js"></script>
     <script src="assets/js/core/popper.min.js"></script>
     <script src="assets/js/core/bootstrap.min.js"></script>
+     <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
 
     <!-- jQuery Scrollbar -->
     <script src="assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
@@ -290,6 +291,17 @@
         lineColor: "#ffa534",
         fillColor: "rgba(255, 165, 52, .14)",
       });
+      // Simple password match validation
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                document.getElementById('confirm_password').focus();
+            }
+        });
     </script>
   </body>
 </html>

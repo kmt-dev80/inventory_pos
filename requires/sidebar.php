@@ -4,7 +4,7 @@
         <div class="sidebar-logo">
           <!-- Logo Header -->
           <div class="logo-header" data-background-color="dark">
-            <a href="dashboard.php" class="logo">
+            <a href="<?= BASE_URL ?>dashboard.php" class="logo">
               <img
                 src="assets/img/kaiadmin/logo_light.svg"
                 alt="navbar brand"
@@ -160,7 +160,7 @@
                 <div class="collapse" id="charts">
                   <ul class="nav nav-collapse">
                     <li>
-                      <a href="add_user.php">
+                      <a href="register.php">
                         <span class="sub-item">Add User</span>
                       </a>
                     </li>
