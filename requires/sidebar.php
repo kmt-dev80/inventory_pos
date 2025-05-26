@@ -1,185 +1,135 @@
+<div id="sidebar" class="sidebar">
+  <div class="logo">
+    <div id="logo-text" class="logo-circle">POS</div>
+  </div>
 
-      <!-- Sidebar -->
-      <div class="sidebar" data-background-color="dark">
-        <div class="sidebar-logo">
-          <!-- Logo Header -->
-          <div class="logo-header" data-background-color="dark">
-            <a href="dashboard.php" class="logo">
-              <img
-                src="assets/img/kaiadmin/logo_light.svg"
-                alt="navbar brand"
-                class="navbar-brand"
-                height="20"
-              />
+  <div class="menu">
+    <ul class="nav flex-column">
+      <!-- Dashboard -->
+      <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>">
+        <a href="<?= BASE_URL ?>index.php" class="nav-link">
+          <i class="bi bi-speedometer2"></i> <span class="menu-text">Dashboard</span>
+        </a>
+      </li>
+
+      <!-- Category -->
+      <li class="nav-item">
+        <a class="nav-link has-submenu" href="#" id="categoryToggle">
+          <i class="bi bi-folder-fill"></i> <span class="menu-text">Category</span>
+        </a>
+        <ul class="submenu" id="categoryMenu">
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'add_c.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/categories/add_c.php" class="nav-link">
+              <i class="bi bi-plus-square"></i> <span class="menu-text">Add Category</span>
             </a>
-            <div class="nav-toggle">
-              <button class="btn btn-toggle toggle-sidebar">
-                <i class="gg-menu-right"></i>
-              </button>
-              <button class="btn btn-toggle sidenav-toggler">
-                <i class="gg-menu-left"></i>
-              </button>
-            </div>
-            <button class="topbar-toggler more">
-              <i class="gg-more-vertical-alt"></i>
-            </button>
-          </div>
-          <!-- End Logo Header -->
-        </div>
-        <div class="sidebar-wrapper scrollbar scrollbar-inner">
-          <div class="sidebar-content">
-            <ul class="nav nav-secondary">
-              <li class="nav-item active">
-                <a
-                  data-bs-toggle="collapse"
-                  href="#dashboard"
-                  class="collapsed"
-                  aria-expanded="false"
-                >
-                  <i class="fas fa-home"></i>
-                  <p>Dashboard</p>
-                </a>
-              </li>
-              <li class="nav-section">
-                <span class="sidebar-mini-icon">
-                  <i class="fa fa-ellipsis-h"></i>
-                </span>
-                <h4 class="text-section">CRUD</h4>
-              </li>
-              <li class="nav-item">
-                <a data-bs-toggle="collapse" href="#base">
-                  <i class="fas fa-th-list"></i>
-                  <p>Category</p>
-                  <span class="caret"></span>
-                </a>
-                <div class="collapse" id="base">
-                  <ul class="nav nav-collapse">
-                    <li>
-                      <a href="manage_category.php ">
-                        <span class="sub-item">Add Category</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="view_category.php ">
-                        <span class="sub-item">View Categories</span>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="nav-item">
-                <a data-bs-toggle="collapse" href="#sidebarLayouts">
-                  <i class="fas fa-layer-group"></i>
-                  <p>Products</p>
-                  <span class="caret"></span>
-                </a>
-                <div class="collapse" id="sidebarLayouts">
-                  <ul class="nav nav-collapse">
-                    <li>
-                      <a href="add_product.php">
-                        <span class="sub-item">Add Product</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="view_product.php">
-                        <span class="sub-item">View Products</span>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="nav-item">
-                <a data-bs-toggle="collapse" href="#forms">
-                  <i class="fas fa-pen-square"></i>
-                  <p>POS</p>
-                  <span class="caret"></span>
-                </a>
-                <div class="collapse" id="forms">
-                  <ul class="nav nav-collapse">
-                    <li>
-                      <a href="sales.php">
-                        <span class="sub-item">Sales</span>
-                      </a>
-                    </li>
-                     <li>
-                      <a href="sales_report.php">
-                        <span class="sub-item">Sales Report</span>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="nav-item">
-                <a data-bs-toggle="collapse" href="#tables">
-                  <i class="fas fa-table"></i>
-                  <p>Suppliers</p>
-                  <span class="caret"></span>
-                </a>
-                <div class="collapse" id="tables">
-                  <ul class="nav nav-collapse">
-                    <li>
-                      <a href="add_supplier">
-                        <span class="sub-item">Add Supplier</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="view_suppliers">
-                        <span class="sub-item">View Suppliers</span>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="nav-item">
-                <a data-bs-toggle="collapse" href="#maps">
-                  <i class="fas fa-map-marker-alt"></i>
-                  <p>Customers</p>
-                  <span class="caret"></span>
-                </a>
-                <div class="collapse" id="maps">
-                  <ul class="nav nav-collapse">
-                    <li>
-                      <a href="add_customer.php">
-                        <span class="sub-item">Add Customer</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="view_customers">
-                        <span class="sub-item">View Customers</span>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="nav-item">
-                <a data-bs-toggle="collapse" href="#charts">
-                  <i class="fas fa-desktop"></i>
-                  <p>Admin Panel</p>
-                  <span class="caret"></span>
-                </a>
-                <div class="collapse" id="charts">
-                  <ul class="nav nav-collapse">
-                    <li>
-                      <a href="add_user.php">
-                        <span class="sub-item">Add User</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="view_user.php">
-                        <span class="sub-item">View Users</span>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </li>
-              <li class="nav-item">
-                <a href="stock_logs.php">
-                   <i class="far fa-chart-bar"></i>
-                  <p>Inventory</p>
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <!-- End Sidebar -->
+          </li>
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'view.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/categories/view.php" class="nav-link">
+              <i class="bi bi-eye-fill"></i> <span class="menu-text">View Categories</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Products -->
+      <li class="nav-item">
+        <a class="nav-link has-submenu" href="#" id="productsToggle">
+          <i class="bi bi-box-seam"></i> <span class="menu-text">Products</span>
+        </a>
+        <ul class="submenu" id="productsMenu">
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'add.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/products/add.php" class="nav-link">
+              <i class="bi bi-plus-square"></i> <span class="menu-text">Add Product</span>
+            </a>
+          </li>
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'view.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/products/view.php" class="nav-link">
+              <i class="bi bi-eye-fill"></i> <span class="menu-text">View Products</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- POS -->
+      <li class="nav-item">
+        <a class="nav-link has-submenu" href="#" id="posToggle">
+          <i class="bi bi-cash-stack"></i> <span class="menu-text">POS</span>
+        </a>
+        <ul class="submenu" id="posMenu">
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'pos.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/sales/pos.php" class="nav-link">
+              <i class="bi bi-cart-plus"></i> <span class="menu-text">Sales</span>
+            </a>
+          </li>
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'sales_report.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/reports/sales_report.php" class="nav-link">
+              <i class="bi bi-graph-up"></i> <span class="menu-text">Sales Report</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Registration -->
+      <li class="nav-item">
+        <a class="nav-link has-submenu" href="#" id="registrationToggle">
+          <i class="bi bi-people-fill"></i> <span class="menu-text">Registration</span>
+        </a>
+        <ul class="submenu" id="registrationMenu">
+          <!-- Users -->
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'add.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/users/add.php" class="nav-link">
+              <i class="bi bi-person-plus"></i> <span class="menu-text">Add User</span>
+            </a>
+          </li>
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'view.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/users/view.php" class="nav-link">
+              <i class="bi bi-people"></i> <span class="menu-text">View Users</span>
+            </a>
+          </li>
+
+          <!-- Customers -->
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'add.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/customers/add.php" class="nav-link">
+              <i class="bi bi-person-plus"></i> <span class="menu-text">Add Customer</span>
+            </a>
+          </li>
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'view.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/customers/view.php" class="nav-link">
+              <i class="bi bi-people"></i> <span class="menu-text">View Customers</span>
+            </a>
+          </li>
+
+          <!-- Suppliers -->
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'add.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/suppliers/add.php" class="nav-link">
+              <i class="bi bi-person-plus"></i> <span class="menu-text">Add Supplier</span>
+            </a>
+          </li>
+          <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'view.php' ? 'active' : '' ?>">
+            <a href="<?= BASE_URL ?>modules/suppliers/view.php" class="nav-link">
+              <i class="bi bi-people"></i> <span class="menu-text">View Suppliers</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Import -->
+      <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'Stock_logs.php' ? 'active' : '' ?>">
+        <a href="<?= BASE_URL ?>modules/inventory/import.php" class="nav-link">
+          <i class="bi bi-file-earmark-arrow-up-fill"></i> <span class="menu-text">Import Record</span>
+        </a>
+      </li>
+
+      <!-- Labels -->
+      <li class="nav-item <?php echo basename($_SERVER['PHP_SELF']) == 'labels.php' ? 'active' : '' ?>">
+        <a href="<?= BASE_URL ?>modules/inventory/labels.php" class="nav-link">
+          <i class="bi bi-tag-fill"></i> <span class="menu-text">Product Label</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="sidebar-footer">
+    © <?= date('Y') ?> POS System
+  </div>
+</div>
