@@ -1,40 +1,52 @@
 <?php/*
 // database_schema_fixed.php
 
-try {
-    // Connect to database
-    $db = new PDO('mysql:host=localhost;charset=utf8mb4', 'root', '');
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Create database if not exists
-    $db->exec("CREATE DATABASE IF NOT EXISTS inventory_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    $db->exec("USE inventory_system");
-    
-    // Enable foreign key checks
-    $db->exec("SET FOREIGN_KEY_CHECKS = 1");
+// Connect to MySQL
+$connection = mysqli_connect('localhost', 'root', '');
 
-    // Drop tables in proper order to avoid foreign key constraints
-    $tablesToDrop = [
-        'sales_return_items', 'purchase_return_items',
-        'sales_payment', 'purchase_payment',
-        'sales_returns', 'purchase_returns',
-        'sale_items', 'purchase_items',
-        'stock', 'inventory_adjustments',
-        'sales', 'purchase',
-        'products', 'child_category',
-        'sub_category', 'category',
-        'brand', 'customers',
-        'suppliers', 'security_logs',
-        'system_logs', 'users'
-    ];
+if (!$connection) {
+    die("Connection failed: " . mysqli_connect_error());
+}
 
-    foreach ($tablesToDrop as $table) {
-        $db->exec("DROP TABLE IF EXISTS `$table`");
+// Create database if not exists
+$queries = [
+    "CREATE DATABASE IF NOT EXISTS inventory_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+    "USE inventory_system",
+    "SET FOREIGN_KEY_CHECKS = 1"
+];
+
+foreach ($queries as $query) {
+    if (!mysqli_query($connection, $query)) {
+        die("Error creating database: " . mysqli_error($connection));
     }
+}
 
-    // Create tables in proper order
-    // 1. First create independent tables (no foreign keys)
-    $db->exec("CREATE TABLE users (
+// Drop tables in proper order to avoid foreign key constraints
+$tablesToDrop = [
+    'sales_return_items', 'purchase_return_items',
+    'sales_payment', 'purchase_payment',
+    'sales_returns', 'purchase_returns',
+    'sale_items', 'purchase_items',
+    'stock', 'inventory_adjustments',
+    'sales', 'purchase',
+    'products', 'child_category',
+    'sub_category', 'category',
+    'brand', 'customers',
+    'suppliers', 'security_logs',
+    'system_logs', 'users'
+];
+
+foreach ($tablesToDrop as $table) {
+    $query = "DROP TABLE IF EXISTS `$table`";
+    if (!mysqli_query($connection, $query)) {
+        die("Error dropping table $table: " . mysqli_error($connection));
+    }
+}
+
+// Create tables in proper order
+$createTables = [
+    // Users table
+    "CREATE TABLE users (
         id INT PRIMARY KEY AUTO_INCREMENT,
         profile_pic VARCHAR(255) NULL,
         username VARCHAR(50) NOT NULL,
@@ -58,10 +70,10 @@ try {
         deleted_at TIMESTAMP NULL,
         UNIQUE INDEX idx_username (username, is_deleted),
         UNIQUE INDEX idx_email (email, is_deleted)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create category tables in hierarchy order
-    $db->exec("CREATE TABLE category (
+    // Category tables
+    "CREATE TABLE category (
         id INT PRIMARY KEY AUTO_INCREMENT,
         category VARCHAR(100) NOT NULL,
         details TEXT NULL,
@@ -70,9 +82,9 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE INDEX idx_category_name (category, is_deleted)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE sub_category (
+    "CREATE TABLE sub_category (
         id INT PRIMARY KEY AUTO_INCREMENT,
         category_id INT NOT NULL,
         category_name VARCHAR(100) NOT NULL,
@@ -83,9 +95,9 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE,
         UNIQUE INDEX idx_subcat_name (category_id, category_name, is_deleted)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE child_category (
+    "CREATE TABLE child_category (
         id INT PRIMARY KEY AUTO_INCREMENT,
         sub_category_id INT NOT NULL,
         category_name VARCHAR(100) NOT NULL,
@@ -96,10 +108,10 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (sub_category_id) REFERENCES sub_category(id) ON DELETE CASCADE,
         UNIQUE INDEX idx_childcat_name (sub_category_id, category_name, is_deleted)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create other independent tables
-    $db->exec("CREATE TABLE brand (
+    // Brand table
+    "CREATE TABLE brand (
         id INT PRIMARY KEY AUTO_INCREMENT,
         brand_name VARCHAR(100) NOT NULL,
         details TEXT NULL,
@@ -108,9 +120,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE INDEX idx_brand_name (brand_name, is_deleted)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE customers (
+    // Customers table
+    "CREATE TABLE customers (
         id INT PRIMARY KEY AUTO_INCREMENT,
         name VARCHAR(100) NOT NULL,
         phone VARCHAR(20) NULL,
@@ -119,9 +132,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_name (name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE suppliers (
+    // Suppliers table
+    "CREATE TABLE suppliers (
         id INT PRIMARY KEY AUTO_INCREMENT,
         name VARCHAR(100) NOT NULL,
         phone VARCHAR(20) NULL,
@@ -131,10 +145,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_name (name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Now create products table (depends on category and brand tables)
-    $db->exec("CREATE TABLE products (
+    // Products table
+    "CREATE TABLE products (
         id INT PRIMARY KEY AUTO_INCREMENT,
         name VARCHAR(100) NOT NULL,
         barcode VARCHAR(50) NOT NULL,
@@ -154,10 +168,10 @@ try {
         FOREIGN KEY (brand_id) REFERENCES brand(id) ON DELETE SET NULL,
         UNIQUE INDEX idx_barcode (barcode, is_deleted),
         FULLTEXT INDEX ft_search (name, barcode)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create transaction tables
-    $db->exec("CREATE TABLE purchase (
+    // Purchase table
+    "CREATE TABLE purchase (
         id INT PRIMARY KEY AUTO_INCREMENT,
         supplier_id INT NULL,
         reference_no VARCHAR(50) NULL,
@@ -174,9 +188,10 @@ try {
         FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
         INDEX idx_reference (reference_no)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE sales (
+    // Sales table
+    "CREATE TABLE sales (
         id INT PRIMARY KEY AUTO_INCREMENT,
         customer_id INT NULL,
         customer_name VARCHAR(100) NULL,
@@ -195,10 +210,10 @@ try {
         FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
         UNIQUE INDEX idx_invoice (invoice_no)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create junction tables
-    $db->exec("CREATE TABLE purchase_items (
+    // Purchase items table
+    "CREATE TABLE purchase_items (
         id INT PRIMARY KEY AUTO_INCREMENT,
         purchase_id INT NOT NULL,
         product_id INT NOT NULL,
@@ -208,9 +223,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_id) REFERENCES purchase(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE sale_items (
+    // Sale items table
+    "CREATE TABLE sale_items (
         id INT PRIMARY KEY AUTO_INCREMENT,
         sale_id INT NOT NULL,
         product_id INT NOT NULL,
@@ -220,10 +236,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create stock table
-    $db->exec("CREATE TABLE stock (
+    // Stock table
+    "CREATE TABLE stock (
         id INT PRIMARY KEY AUTO_INCREMENT,
         product_id INT NOT NULL,
         user_id INT NULL,
@@ -241,10 +257,10 @@ try {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
         FOREIGN KEY (purchase_id) REFERENCES purchase(id) ON DELETE SET NULL,
         FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create returns tables (must come after sales and purchase tables)
-    $db->exec("CREATE TABLE sales_returns (
+    // Sales returns table
+    "CREATE TABLE sales_returns (
         id INT PRIMARY KEY AUTO_INCREMENT,
         sale_id INT NOT NULL,
         return_reason ENUM('defective','wrong_item','customer_change_mind','other') NOT NULL,
@@ -258,9 +274,10 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE RESTRICT,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE purchase_returns (
+    // Purchase returns table
+    "CREATE TABLE purchase_returns (
         id INT PRIMARY KEY AUTO_INCREMENT,
         purchase_id INT NOT NULL,
         return_reason ENUM('defective','wrong_item','supplier_error','other') NOT NULL,
@@ -274,10 +291,10 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_id) REFERENCES purchase(id) ON DELETE RESTRICT,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create return items tables
-    $db->exec("CREATE TABLE sales_return_items (
+    // Sales return items table
+    "CREATE TABLE sales_return_items (
         id INT PRIMARY KEY AUTO_INCREMENT,
         sales_return_id INT NOT NULL,
         product_id INT NOT NULL,
@@ -287,9 +304,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sales_return_id) REFERENCES sales_returns(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE purchase_return_items (
+    // Purchase return items table
+    "CREATE TABLE purchase_return_items (
         id INT PRIMARY KEY AUTO_INCREMENT,
         purchase_return_id INT NOT NULL,
         product_id INT NOT NULL,
@@ -299,10 +317,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_return_id) REFERENCES purchase_returns(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create payment tables (must come after sales/purchase and returns tables)
-    $db->exec("CREATE TABLE sales_payment (
+    // Sales payment table
+    "CREATE TABLE sales_payment (
         id INT PRIMARY KEY AUTO_INCREMENT,
         customer_id INT NULL,
         sales_id INT NULL,
@@ -315,9 +333,10 @@ try {
         FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
         FOREIGN KEY (sales_id) REFERENCES sales(id) ON DELETE SET NULL,
         FOREIGN KEY (sales_return_id) REFERENCES sales_returns(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE purchase_payment (
+    // Purchase payment table
+    "CREATE TABLE purchase_payment (
         id INT PRIMARY KEY AUTO_INCREMENT,
         supplier_id INT NULL,
         purchase_id INT NULL,
@@ -330,10 +349,10 @@ try {
         FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
         FOREIGN KEY (purchase_id) REFERENCES purchase(id) ON DELETE SET NULL,
         FOREIGN KEY (purchase_return_id) REFERENCES purchase_returns(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    // Create other tables
-    $db->exec("CREATE TABLE inventory_adjustments (
+    // Inventory adjustments table
+    "CREATE TABLE inventory_adjustments (
         id INT PRIMARY KEY AUTO_INCREMENT,
         product_id INT NOT NULL,
         user_id INT NOT NULL,
@@ -343,9 +362,10 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE system_logs (
+    // System logs table
+    "CREATE TABLE system_logs (
         id INT PRIMARY KEY AUTO_INCREMENT,
         user_id INT NULL,
         ip_address VARCHAR(45) NOT NULL,
@@ -354,9 +374,10 @@ try {
         message TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
-    $db->exec("CREATE TABLE security_logs (
+    // Security logs table
+    "CREATE TABLE security_logs (
         id INT PRIMARY KEY AUTO_INCREMENT,
         user_id INT NULL,
         ip_address VARCHAR(45) NOT NULL,
@@ -365,10 +386,18 @@ try {
         status ENUM('success','failure') NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+];
 
-    // Create views
-    $db->exec("CREATE VIEW current_stock AS
+foreach ($createTables as $query) {
+    if (!mysqli_query($connection, $query)) {
+        die("Error creating table: " . mysqli_error($connection));
+    }
+}
+
+// Create views
+$views = [
+    "CREATE OR REPLACE VIEW current_stock AS
     SELECT 
       p.id AS product_id,
       p.name AS product_name,
@@ -389,9 +418,9 @@ try {
     FROM products p
     LEFT JOIN stock s ON p.id = s.product_id
     WHERE p.is_deleted = 0
-    GROUP BY p.id, p.name, p.barcode, p.price, p.sell_price");
+    GROUP BY p.id, p.name, p.barcode, p.price, p.sell_price",
 
-    $db->exec("CREATE VIEW sales_summary AS
+    "CREATE OR REPLACE VIEW sales_summary AS
     SELECT 
       DATE(s.created_at) AS sale_date,
       COUNT(*) AS total_sales,
@@ -402,11 +431,20 @@ try {
       (SELECT COALESCE(SUM(sr.refund_amount), 0) FROM sales_returns sr WHERE DATE(sr.created_at) = DATE(s.created_at)) AS total_refunds
     FROM sales s
     WHERE s.is_deleted = 0
-    GROUP BY DATE(s.created_at)");
+    GROUP BY DATE(s.created_at)"
+];
 
-    // 1. Stock Update Triggers
-    $db->exec("DROP TRIGGER IF EXISTS after_purchase_item_insert");
-    $db->exec("CREATE TRIGGER after_purchase_item_insert
+foreach ($views as $query) {
+    if (!mysqli_query($connection, $query)) {
+        die("Error creating view: " . mysqli_error($connection));
+    }
+}
+
+// Create triggers
+$triggers = [
+    // Stock Update Triggers
+    "DROP TRIGGER IF EXISTS after_purchase_item_insert",
+    "CREATE TRIGGER after_purchase_item_insert
     AFTER INSERT ON purchase_items
     FOR EACH ROW
     BEGIN
@@ -418,21 +456,21 @@ try {
         SET price = NEW.unit_price, 
             updated_at = NOW()
         WHERE id = NEW.product_id AND (price <> NEW.unit_price OR price IS NULL);
-    END");
+    END",
 
-    $db->exec("DROP TRIGGER IF EXISTS after_sale_item_insert");
-    $db->exec("CREATE TRIGGER after_sale_item_insert
+    "DROP TRIGGER IF EXISTS after_sale_item_insert",
+    "CREATE TRIGGER after_sale_item_insert
     AFTER INSERT ON sale_items
     FOR EACH ROW
     BEGIN
         INSERT INTO stock (product_id, user_id, change_type, qty, price, sale_id, created_at)
         VALUES (NEW.product_id, (SELECT user_id FROM sales WHERE id = NEW.sale_id), 
                'sale', NEW.quantity, NEW.unit_price, NEW.sale_id, NOW());
-    END");
+    END",
 
-    // 2. Automatic Total Calculation Triggers
-    $db->exec("DROP TRIGGER IF EXISTS after_purchase_item_change");
-    $db->exec("CREATE TRIGGER after_purchase_item_change
+    // Automatic Total Calculation Triggers
+    "DROP TRIGGER IF EXISTS after_purchase_item_change",
+    "CREATE TRIGGER after_purchase_item_change
     AFTER INSERT ON purchase_items
     FOR EACH ROW
     BEGIN
@@ -449,10 +487,10 @@ try {
             total = v_total,
             updated_at = NOW()
         WHERE id = NEW.purchase_id;
-    END");
+    END",
 
-    $db->exec("DROP TRIGGER IF EXISTS after_sale_item_change");
-    $db->exec("CREATE TRIGGER after_sale_item_change
+    "DROP TRIGGER IF EXISTS after_sale_item_change",
+    "CREATE TRIGGER after_sale_item_change
     AFTER INSERT ON sale_items
     FOR EACH ROW
     BEGIN
@@ -473,11 +511,11 @@ try {
             total = v_total,
             updated_at = NOW()
         WHERE id = NEW.sale_id;
-    END");
+    END",
 
-    // 3. Inventory Alert Trigger
-    $db->exec("DROP TRIGGER IF EXISTS after_stock_update");
-    $db->exec("CREATE TRIGGER after_stock_update
+    // Inventory Alert Trigger
+    "DROP TRIGGER IF EXISTS after_stock_update",
+    "CREATE TRIGGER after_stock_update
     AFTER INSERT ON stock
     FOR EACH ROW
     BEGIN
@@ -496,22 +534,22 @@ try {
             VALUES (NEW.user_id, NULL, 'stock', 
                     CONCAT('Low stock alert: ', v_product_name, ' (', v_current_qty, ' remaining)'));
         END IF;
-    END");
+    END",
 
-    // 4. Sales Return Trigger
-    $db->exec("DROP TRIGGER IF EXISTS after_sales_return_item_insert");
-    $db->exec("CREATE TRIGGER after_sales_return_item_insert
+    // Sales Return Trigger
+    "DROP TRIGGER IF EXISTS after_sales_return_item_insert",
+    "CREATE TRIGGER after_sales_return_item_insert
     AFTER INSERT ON sales_return_items
     FOR EACH ROW
     BEGIN
         INSERT INTO stock (product_id, user_id, change_type, qty, price, sales_return_id, created_at)
         VALUES (NEW.product_id, (SELECT user_id FROM sales_returns WHERE id = NEW.sales_return_id), 
                'sales_return', NEW.quantity, NEW.unit_price, NEW.sales_return_id, NOW());
-    END");
+    END",
 
-    // 5. Price Validation Trigger
-    $db->exec("DROP TRIGGER IF EXISTS before_product_price_update");
-    $db->exec("CREATE TRIGGER before_product_price_update
+    // Price Validation Trigger
+    "DROP TRIGGER IF EXISTS before_product_price_update",
+    "CREATE TRIGGER before_product_price_update
     BEFORE UPDATE ON products
     FOR EACH ROW
     BEGIN
@@ -519,11 +557,11 @@ try {
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Sell price cannot be lower than purchase price';
         END IF;
-    END");
+    END",
 
-    // 6. User Security Trigger
-    $db->exec("DROP TRIGGER IF EXISTS after_user_login_attempt");
-    $db->exec("CREATE TRIGGER after_user_login_attempt
+    // User Security Trigger
+    "DROP TRIGGER IF EXISTS after_user_login_attempt",
+    "CREATE TRIGGER after_user_login_attempt
     AFTER UPDATE ON users
     FOR EACH ROW
     BEGIN
@@ -532,11 +570,15 @@ try {
             VALUES (NEW.id, NEW.last_login_ip, 'account_lock', 
                     'Account locked due to too many failed attempts', 'failure');
         END IF;
-    END");
+    END"
+];
 
-    echo "Database schema created successfully with all tables and relationships!";
+foreach ($triggers as $query) {
+    if (!mysqli_query($connection, $query)) {
+        die("Error creating trigger: " . mysqli_error($connection));
+    }
+}
 
-} catch (PDOException $e) {
-    die("Database error: " . $e->getMessage());
-}*/
+echo "Database schema created successfully with all tables and relationships!";
+mysqli_close($connection);*/
 ?>

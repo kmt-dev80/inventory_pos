@@ -1,5 +1,3 @@
-"use strict";
-
 // Initialize theme settings when DOM is ready
 $(document).ready(function() {
   // Load saved settings

@@ -1,7 +1,104 @@
  <?php
- session_start();
-  require_once __DIR__ . '/db_plugin.php';
- ?>
+session_start();
+require_once __DIR__ . '/db_plugin.php';
+ // Redirect if already logged in
+if (isset($_SESSION['log_user_status']) && $_SESSION['log_user_status'] === true) {
+    header("Location: dashboard.php");
+    exit();
+}
+
+// Handle login attempt
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    
+    // Basic validation
+    if (empty($username) || empty($password)) {
+        $error = "Username and password are required";
+    } else {
+        // Get user with login attempt tracking
+        $res = $mysqli->common_select('users', 
+            'id, username, full_name, email, role, is_active, password, login_attempts, locked_until', 
+            ['username' => $username]
+        );
+        
+        if ($res['error'] == 0 && count($res['data']) > 0) {
+            $user = $res['data'][0];
+            
+            // Check if account is locked
+            if ($user->locked_until && strtotime($user->locked_until) > time()) {
+                $error = "Account locked. Try again later.";
+            } else {
+                // Verify password
+                if (password_verify($password, $user->password)) {
+                    // Reset login attempts on successful login
+                    $mysqli->common_update('users', 
+                        [
+                            'login_attempts' => 0,
+                            'locked_until' => null,
+                            'last_login' => date('Y-m-d H:i:s'),
+                            'last_login_ip' => $_SERVER['REMOTE_ADDR']
+                        ], 
+                        ['id' => $user->id]
+                    );
+                    
+                    if ($user->is_active == 0) {
+                        $error = "Your account is not active";
+                    } else {
+                        // Set session
+                        $_SESSION['user'] = $user;
+                        $_SESSION['role'] = $user->role;
+                        $_SESSION['log_user_status'] = true;
+                        
+                        // Log successful login
+                        $mysqli->common_insert('security_logs', [
+                            'user_id' => $user->id,
+                            'ip_address' => $_SERVER['REMOTE_ADDR'],
+                            'action' => 'login',
+                            'details' => 'Successful login',
+                            'status' => 'success'
+                        ]);
+                        
+                        header("Location: dashboard.php");
+                        exit();
+                    }
+                } else {
+                    // Increment failed login attempts
+                    $attempts = $user->login_attempts + 1;
+                    $lock_until = null;
+                    
+                    if ($attempts >= 5) {
+                        $lock_until = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+                        $error = "Too many failed attempts. Account locked for 5
+                         minutes.";
+                    } else {
+                        $error = "Invalid username or password";
+                    }
+                    
+                    $mysqli->common_update('users', 
+                        [
+                            'login_attempts' => $attempts,
+                            'locked_until' => $lock_until
+                        ], 
+                        ['id' => $user->id]
+                    );
+                    
+                    // Log failed attempt
+                    $mysqli->common_insert('security_logs', [
+                        'user_id' => $user->id,
+                        'ip_address' => $_SERVER['REMOTE_ADDR'],
+                        'action' => 'login',
+                        'details' => 'Failed login attempt',
+                        'status' => 'failure'
+                    ]);
+                }
+            }
+        } else {
+            $error = "Invalid username or password";
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,41 +127,6 @@
       <button class="btn" type="submit">Login</button>
     </form>
   </div>
-  <?php
-  if($_POST){
-    $_POST['password'] = sha1($_POST['password']);
-    
-    $res = $mysqli->common_select('users','id,username,full_name,email,role,is_active',array(
-      'username' => $_POST['username'],
-      'password' => $_POST['password']
-    ));
-    
-    if($res['error']==0 && count($res['data']) > 0){
-      $user = $res['data'][0];
-      
-      if($user->is_active==0){
-        echo "<script>alert('Your account is not active')</script>";
-      } else {
-
-        $_SESSION['user'] = $user;
-        $_SESSION['role'] = $user->role;
-        $_SESSION['log_user_status'] = true;
-        
-        $mysqli->common_update('users', 
-          array(
-            'last_login' => date('Y-m-d H:i:s'),
-            'last_login_ip' => $_SERVER['REMOTE_ADDR']
-          ), 
-          array('id' => $user->id)
-        );
-        
-        echo "<script>location.href='dashboard.php'</script>";
-      }
-    } else {
-      echo "<script>alert('Invalid username or password')</script>";
-    }
-  }
-  ?>
 
   <span style="--i:0;"></span>
   <span style="--i:1;"></span>

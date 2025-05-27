@@ -252,10 +252,6 @@
     <!-- Bootstrap Notify -->
     <script src="<?= BASE_URL ?>assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
 
-    <!-- jQuery Vector Maps -->
-    <script src="<?= BASE_URL ?>assets/js/plugin/jsvectormap/jsvectormap.min.js"></script>
-    <script src="<?= BASE_URL ?>assets/js/plugin/jsvectormap/world.js"></script>
-
     <!-- Sweet Alert -->
     <script src="<?= BASE_URL ?>assets/js/plugin/sweetalert/sweetalert.min.js"></script>
 
