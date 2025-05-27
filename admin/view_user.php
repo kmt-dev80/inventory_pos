@@ -118,12 +118,3 @@ $users = $mysqli->common_select('users', '*', ['is_deleted' => 0]);
 </div>
 
 <?php require_once __DIR__ . '/../requires/footer.php'; ?>
-
-<script>
-$(document).ready(function() {
-    $('#userTable').DataTable({
-        "pageLength": 10,
-        "order": [[0, "desc"]]
-    });
-});
-</script>
