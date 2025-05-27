@@ -4,9 +4,9 @@
         <div class="sidebar-logo">
           <!-- Logo Header -->
           <div class="logo-header" data-background-color="dark">
-            <a href="dashboard.php" class="logo">
+            <a href="<?= BASE_URL ?>dashboard.php" class="logo">
               <img
-                src="assets/img/kaiadmin/logo_light.svg"
+                src="<?= BASE_URL ?>assets/img/kaiadmin/logo_light.svg"
                 alt="navbar brand"
                 class="navbar-brand"
                 height="20"
@@ -160,12 +160,12 @@
                 <div class="collapse" id="charts">
                   <ul class="nav nav-collapse">
                     <li>
-                      <a href="add_user.php">
+                      <a href="<?= BASE_URL ?>admin/register.php">
                         <span class="sub-item">Add User</span>
                       </a>
                     </li>
                     <li>
-                      <a href="view_user.php">
+                      <a href="<?= BASE_URL ?>admin/view_user.php">
                         <span class="sub-item">View Users</span>
                       </a>
                     </li>

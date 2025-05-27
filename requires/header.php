@@ -1,4 +1,6 @@
- <?php require_once __DIR__ . '/../db.php'; ?>
+ <?php 
+ require_once __DIR__ . '/../db_plugin.php'; 
+ ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -10,12 +12,12 @@
     />
     <link
       rel="icon"
-      href="assets/img/kaiadmin/favicon.ico"
+      href="<?= BASE_URL ?>assets/img/kaiadmin/favicon.ico"
       type="image/x-icon"
     />
 
     <!-- Fonts and icons -->
-    <script src="assets/js/plugin/webfont/webfont.min.js"></script>
+    <script src="<?= BASE_URL ?>assets/js/plugin/webfont/webfont.min.js"></script>
     <script>
       WebFont.load({
         google: { families: ["Public Sans:300,400,500,600,700"] },
@@ -26,21 +28,22 @@
             "Font Awesome 5 Brands",
             "simple-line-icons",
           ],
-          urls: ["assets/css/fonts.min.css"],
+          urls: ["<?= BASE_URL ?>assets/css/fonts.min.css"],
         },
         active: function () {
           sessionStorage.fonts = true;
         },
       });
     </script>
-
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- CSS Files -->
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="assets/css/plugins.min.css" />
-    <link rel="stylesheet" href="assets/css/kaiadmin.min.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/plugins.min.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/kaiadmin.min.css" />
 
     <!-- CSS Just for demo purpose, don't include it in your project -->
-    <link rel="stylesheet" href="assets/css/dark-mode.css" />
+    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/dark-mode.css" />
   </head>
   <body>
     <div class="wrapper">
