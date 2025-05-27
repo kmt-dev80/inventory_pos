@@ -264,6 +264,8 @@
 
     <!-- Kaiadmin DEMO methods, don't include it in your project! -->
    <script src="<?= BASE_URL ?>assets/js/theme-persistence.js"></script>
+   <script src="<?= BASE_URL ?>assets/js/script.js"></script>
+
     <script>
       $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
         type: "line",

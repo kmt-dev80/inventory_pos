@@ -157,18 +157,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
     </div>
-</div>
-<script>
-    // Simple password match validation
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
-            
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                alert('Passwords do not match!');
-                document.getElementById('confirm_password').focus();
-            }
-        }); 
-</script>    
+</div>    
 <?php require_once __DIR__ . '/../requires/footer.php'; ?>
