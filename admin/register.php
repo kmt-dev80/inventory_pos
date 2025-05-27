@@ -4,17 +4,16 @@ if(!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true
         header("Location: login.php");
         exit();
     }
- require_once __DIR__ . '/requires/header.php';
- require_once __DIR__ . '/requires/sidebar.php';
- require_once __DIR__ . '/requires/topbar.php';
+ require_once __DIR__ . '/../requires/header.php';
+ require_once __DIR__ . '/../requires/sidebar.php';
+ require_once __DIR__ . '/../requires/topbar.php';
 
-// Initialize variables
 $errors = [];
 $success = false;
 
-// Process form submission
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate inputs
+
     $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -22,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $full_name = trim($_POST['full_name'] ?? '');
     $role = $_POST['role'] ?? 'cashier';
 
-    // Username validation
     if (empty($username)) {
         $errors[] = "Username is required";
     } elseif (strlen($username) < 4) {
@@ -160,4 +158,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
     </div>
 </div>
-<?php require_once __DIR__ . '/requires/footer.php'; ?>
+<?php require_once __DIR__ . '/../requires/footer.php'; ?>
