@@ -55,7 +55,7 @@
                 <div class="collapse" id="base">
                   <ul class="nav nav-collapse">
                     <li>
-                      <a href="manage_category.php ">
+                      <a href="<?= BASE_URL ?>includes/add_category.php ">
                         <span class="sub-item">Add Category</span>
                       </a>
                     </li>
