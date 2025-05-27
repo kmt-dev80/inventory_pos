@@ -43,7 +43,6 @@ if (isset($_GET['edit'])) {
     $res = execute_query($mysqli, "SELECT * FROM categories WHERE id=$id");
     $edit_data = $res->fetch_assoc();
 }
-
 // Handle Update Category
 if (isset($_POST['update'])) {
     $id = $_POST['id'];
