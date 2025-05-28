@@ -55,7 +55,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     <div class="page-inner">
         <div class="page-header">
             <h4 class="page-title">Trash</h4>
-            <a href="view_product.php" class="btn btn-secondary btn-round ml-auto">
+            <a href="view_product.php" class="btn btn-secondary btn-round ms-auto">
                 <i class="fas fa-arrow-left"></i> Back to Products
             </a>
         </div>
@@ -117,12 +117,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
 <script>
-$(document).ready(function() {
-    $('#trashTable').DataTable();
-});
+
 </script>
 
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>

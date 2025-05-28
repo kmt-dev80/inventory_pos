@@ -58,8 +58,8 @@
                   </a>
                 </li>
                 <li>
-                  <a href="view_categories.php">
-                    <span class="sub-item">View Categories</span>
+                  <a href="<?= BASE_URL ?>modules/categories/manage_brands.php">
+                    <span class="sub-item">Manage Brand</span>
                   </a>
                 </li>
               </ul>
@@ -80,8 +80,18 @@
                 </a>
               </li>
               <li>
-                <a href="view_product.php">
+                <a href="<?= BASE_URL ?>modules/products/view_product.php">
                   <span class="sub-item">View Products</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/products/edit_product.php">
+                  <span class="sub-item">Edit Products</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/products/trash_product.php">
+                  <span class="sub-item">Trash Products</span>
                 </a>
               </li>
             </ul>

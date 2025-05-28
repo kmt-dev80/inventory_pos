@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true) {
-    header("Location: login.php");//../../login.php
+    header("Location: ../../login.php");
     exit();
 }
 require_once __DIR__ . '/../../db_plugin.php'; 
@@ -81,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Handle AJAX requests for category dropdowns
 if (isset($_GET['get_sub_categories'])) {
+     header('Content-Type: application/json');
     $category_id = (int)$_GET['category_id'];
     if ($category_id > 0) {
         $result = $mysqli->common_select('sub_category', '*', ['category_id' => $category_id, 'is_deleted' => 0], 'category_name', 'asc');
@@ -223,57 +224,4 @@ require_once __DIR__ . '/../../requires/sidebar.php';
         </div>
     </div>
 </div>
-
-<script>
-$(document).ready(function() {
-    // Category chain dropdowns
-    $('#category_id').change(function() {
-        var categoryId = $(this).val();
-        $('#sub_category_id').html('<option value="">Loading...</option>');
-        $('#sub_category_id').prop('disabled', true);
-        $('#child_category_id').html('<option value="">Select Child Category</option>');
-        $('#child_category_id').prop('disabled', true);
-        
-        if (categoryId) {
-            $.get('add_product.php', {get_sub_categories: 1, category_id: categoryId}, function(data) {
-                var options = '<option value="">Select Sub Category</option>';
-                $.each(data, function(key, value) {
-                    options += '<option value="' + value.id + '">' + value.category_name + '</option>';
-                });
-                $('#sub_category_id').html(options);
-                $('#sub_category_id').prop('disabled', false);
-            });
-        }
-    });
-    
-    $('#sub_category_id').change(function() {
-        var subCategoryId = $(this).val();
-        $('#child_category_id').html('<option value="">Loading...</option>');
-        $('#child_category_id').prop('disabled', true);
-        
-        if (subCategoryId) {
-            $.get('add_product.php', {get_child_categories: 1, sub_category_id: subCategoryId}, function(data) {
-                var options = '<option value="">Select Child Category</option>';
-                $.each(data, function(key, value) {
-                    options += '<option value="' + value.id + '">' + value.category_name + '</option>';
-                });
-                $('#child_category_id').html(options);
-                $('#child_category_id').prop('disabled', false);
-            });
-        }
-    });
-    
-    // Price validation
-    $('#sell_price').blur(function() {
-        var price = parseFloat($('#price').val());
-        var sellPrice = parseFloat($(this).val());
-        
-        if (sellPrice < price) {
-            alert('Selling price cannot be lower than purchase price');
-            $(this).val(price);
-        }
-    });
-});
-</script>
-
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>

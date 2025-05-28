@@ -230,6 +230,7 @@
     </div>
     <!--   Core JS Files   -->
     <script src="<?= BASE_URL ?>assets/js/core/jquery-3.7.1.min.js"></script>
+    <script src="<?= BASE_URL ?>assets/js/products.js"></script>
     <script src="<?= BASE_URL ?>assets/js/core/popper.min.js"></script>
     <script src="<?= BASE_URL ?>assets/js/core/bootstrap.min.js"></script>
      <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
@@ -247,7 +248,7 @@
     <script src="<?= BASE_URL ?>assets/js/plugin/chart-circle/circles.min.js"></script>
 
     <!-- Datatables -->
-    <script src="<?= BASE_URL ?>assets/js/plugin/datatables/datatables.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script> 
 
     <!-- Bootstrap Notify -->
     <script src="<?= BASE_URL ?>assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
@@ -263,7 +264,13 @@
    <script src="<?= BASE_URL ?>assets/js/script.js"></script>
 
     <script>
-      
+    $(document).ready(function() {
+        $('#productTable').DataTable();
+        $('#trashTable').DataTable();
+        $('#brandTable').DataTable();
+    });
+
+            
       $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
         type: "line",
         height: "70",

@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true) {
-    header("Location: login.php");
+    header("Location: ../../login.php");
     exit();
 }
 require_once __DIR__ . '/../../db_plugin.php'; 

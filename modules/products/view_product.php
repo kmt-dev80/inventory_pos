@@ -5,7 +5,7 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     exit();
 }
 
-require_once __DIR__ . '/../../db_plugin.php'; 
+require_once __DIR__ . '/../../db_plugin.php';
 
 // Get all active products
 $result = $mysqli->common_select('products', '*', ['is_deleted' => 0], 'name', 'asc');
@@ -20,7 +20,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     <div class="page-inner">
         <div class="page-header">
             <h4 class="page-title">Product List</h4>
-            <div class="ml-auto">
+            <div class="ms-auto">
                 <a href="add_product.php" class="btn btn-primary btn-round">
                     <i class="fas fa-plus"></i> Add Product
                 </a>
@@ -92,12 +92,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
+<!-- -->
 <script>
-$(document).ready(function() {
-    $('#productTable').DataTable();
-});
+
 </script>
 
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
