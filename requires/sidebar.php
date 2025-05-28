@@ -44,17 +44,38 @@
           </span>
           <h4 class="text-section">CRUD</h4>
         </li>
+        <li class="nav-item">
+            <a data-bs-toggle="collapse" href="#sidebarLayouts">
+              <i class="fas fa-th-list"></i>
+              <p>Categories</p>
+              <span class="caret"></span>
+            </a>
+            <div class="collapse" id="sidebarLayouts">
+              <ul class="nav nav-collapse">
+                <li>
+                  <a href="<?= BASE_URL ?>modules/categories/add_category.php">
+                    <span class="sub-item">Add Category</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="view_categories.php">
+                    <span class="sub-item">View Categories</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
       
         <li class="nav-item">
-          <a data-bs-toggle="collapse" href="#sidebarLayouts">
+          <a data-bs-toggle="collapse" href="#base">
             <i class="fas fa-layer-group"></i>
             <p>Products</p>
             <span class="caret"></span>
           </a>
-          <div class="collapse" id="sidebarLayouts">
+          <div class="collapse" id="base">
             <ul class="nav nav-collapse">
               <li>
-                <a href="add_product.php">
+                <a href="<?= BASE_URL ?>modules/products/add_product.php">
                   <span class="sub-item">Add Product</span>
                 </a>
               </li>

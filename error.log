@@ -1,0 +1,5 @@
+[28-May-2025 10:25:01 Asia/Dhaka] PHP Warning:  include_once(includes/footer.php): Failed to open stream: No such file or directory in F:\WDPF64\Takiul Hasan\xampp8.2.12\htdocs\inventory_pos\modules\categories\add_category.php on line 375
+[28-May-2025 10:25:01 Asia/Dhaka] PHP Warning:  include_once(): Failed opening 'includes/footer.php' for inclusion (include_path='F:\WDPF64\Takiul Hasan\xampp8.2.12\php\PEAR') in F:\WDPF64\Takiul Hasan\xampp8.2.12\htdocs\inventory_pos\modules\categories\add_category.php on line 375
+[28-May-2025 10:26:03 Asia/Dhaka] PHP Warning:  include_once(/../../includes/footer.php): Failed to open stream: No such file or directory in F:\WDPF64\Takiul Hasan\xampp8.2.12\htdocs\inventory_pos\modules\categories\add_category.php on line 375
+[28-May-2025 10:26:03 Asia/Dhaka] PHP Warning:  include_once(): Failed opening '/../../includes/footer.php' for inclusion (include_path='F:\WDPF64\Takiul Hasan\xampp8.2.12\php\PEAR') in F:\WDPF64\Takiul Hasan\xampp8.2.12\htdocs\inventory_pos\modules\categories\add_category.php on line 375
+now give me add_brand.php with add, view, edit, delete features combining in  add_brand.php file

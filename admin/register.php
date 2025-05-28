@@ -4,10 +4,7 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     header("Location: login.php");
     exit();
 }
-
-require_once __DIR__ . '/../requires/header.php';
-require_once __DIR__ . '/../requires/sidebar.php';
-require_once __DIR__ . '/../requires/topbar.php';
+require_once __DIR__ . '/../db_plugin.php'; 
 
 $errors = [];
 $success = false;
@@ -108,6 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+require_once __DIR__ . '/../requires/header.php';
+require_once __DIR__ . '/../requires/sidebar.php';
+require_once __DIR__ . '/../requires/topbar.php';
 ?>
 <div class="container">
     <div class="page-inner">

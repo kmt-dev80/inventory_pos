@@ -581,4 +581,3 @@ foreach ($triggers as $query) {
 
 echo "Database schema created successfully with all tables and relationships!";
 mysqli_close($connection);*/
-?>

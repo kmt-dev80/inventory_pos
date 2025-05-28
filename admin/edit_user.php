@@ -327,7 +327,4 @@ require_once __DIR__ . '/../requires/topbar.php';
     </div>
 </div>
 
-<?php 
-require_once __DIR__ . '/../requires/footer.php';
-ob_end_flush();
-?>
+<?php require_once __DIR__ . '/../requires/footer.php'; ?>

@@ -1,6 +1,3 @@
- <?php 
- require_once __DIR__ . '/../db_plugin.php'; 
- ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>

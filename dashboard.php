@@ -4,6 +4,7 @@
         header("Location: login.php");
         exit();
     }
+    require_once __DIR__ . '/db_plugin.php'; 
     require_once __DIR__ . '/requires/header.php'; 
     require_once __DIR__ . '/requires/sidebar.php'; 
     require_once __DIR__ . '/requires/topbar.php'; 

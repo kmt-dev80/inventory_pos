@@ -4,9 +4,7 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     header("Location: login.php");
     exit();
 }
- require_once __DIR__ . '/../requires/header.php';
- require_once __DIR__ . '/../requires/sidebar.php';
- require_once __DIR__ . '/../requires/topbar.php';
+require_once __DIR__ . '/../db_plugin.php'; 
 
 // Handle delete action first
 if (isset($_GET['delete_id'])) {
@@ -31,6 +29,9 @@ if (isset($_GET['delete_id'])) {
 // Fetch users after handling delete to get fresh data
 $users_result = $mysqli->common_select('users', '*', ['is_deleted' => 0]);
 $users = $users_result['data'] ?? []; // Initialize as empty array if null
+ require_once __DIR__ . '/../requires/header.php';
+ require_once __DIR__ . '/../requires/sidebar.php';
+ require_once __DIR__ . '/../requires/topbar.php';
 ?>
 
 <div class="container">
