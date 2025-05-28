@@ -57,6 +57,11 @@
                     <span class="sub-item">Add Category</span>
                   </a>
                 </li>
+                 <li>
+                  <a href="<?= BASE_URL ?>modules/categories/view_categories.php">
+                    <span class="sub-item">View Categories</span>
+                  </a>
+                </li>
                 <li>
                   <a href="<?= BASE_URL ?>modules/categories/manage_brands.php">
                     <span class="sub-item">Manage Brand</span>

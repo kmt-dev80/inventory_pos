@@ -294,7 +294,7 @@
               href="#"
               aria-expanded="false"
             >
-              <div class="avatar-sm">
+              <div class="avatar-sm"><!-- This is profile picture -->
                 <img
                   src="<?= BASE_URL ?>assets/img/profile.jpg"
                   alt="..."

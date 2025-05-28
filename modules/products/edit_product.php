@@ -106,7 +106,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     <div class="page-inner">
         <div class="page-header">
             <h4 class="page-title">Edit Product</h4>
-            <a href="view_product.php" class="btn btn-secondary btn-round ml-auto">
+            <a href="view_product.php" class="btn btn-secondary btn-round ms-auto">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
         </div>
