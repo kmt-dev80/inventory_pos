@@ -26,9 +26,6 @@ if (isset($_GET['delete_id'])) {
     } else {
         $_SESSION['error'] = "You cannot delete yourself";
     }
-    
-    header("Location: view_user.php");
-    exit();
 }
 
 // Fetch users after handling delete to get fresh data
@@ -53,7 +50,7 @@ $users = $users_result['data'] ?? []; // Initialize as empty array if null
             <div class="card-header">
                 <div class="d-flex align-items-center">
                     <h4 class="card-title">All Users</h4>
-                    <a href="register.php" class="btn btn-primary btn-round ml-auto">
+                    <a href="register.php" class="btn btn-primary btn-round ms-auto">
                         <i class="fa fa-plus"></i> Add New User
                     </a>
                 </div>

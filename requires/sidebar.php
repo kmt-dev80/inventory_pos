@@ -30,7 +30,7 @@
         <li class="nav-item active">
           <a
             data-bs-toggle="collapse"
-            href="#dashboard"
+            href="<?= BASE_URL ?>dashboard.php"
             class="collapsed"
             aria-expanded="false"
           >

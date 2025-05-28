@@ -111,29 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <div class="container">
     <div class="page-inner">
-        <div class="page-header">
-            <h4 class="page-title">User Management</h4>
-            <ul class="breadcrumbs">
-                <li class="nav-home">
-                    <a href="dashboard.php">
-                        <i class="flaticon-home"></i>
-                    </a>
-                </li>
-                <li class="separator">
-                    <i class="flaticon-right-arrow"></i>
-                </li>
-                <li class="nav-item">
-                    <a href="view_user.php">Users</a>
-                </li>
-                <li class="separator">
-                    <i class="flaticon-right-arrow"></i>
-                </li>
-                <li class="nav-item">
-                    <a href="#">Add New User</a>
-                </li>
-            </ul>
-        </div>
-
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">

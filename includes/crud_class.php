@@ -16,6 +16,10 @@ class CRUD {
 
     // Secure parameter binding to prevent SQL injection
     private function bind_params($stmt, $params) {
+        if (empty($params)) {
+            return true;
+        }
+        
         $types = '';
         $values = [];
         
@@ -31,7 +35,7 @@ class CRUD {
         }
         
         array_unshift($values, $types);
-        call_user_func_array([$stmt, 'bind_param'], $this->ref_values($values));
+        return call_user_func_array([$stmt, 'bind_param'], $this->ref_values($values));
     }
     
     private function ref_values($array) {
@@ -48,13 +52,21 @@ class CRUD {
         $error_msg = "";
         $params = [];
 
-        $sql = "SELECT $fields FROM $table";
+        // Validate table name
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+            return ['data' => [], 'error' => 1, 'error_msg' => "Invalid table name"];
+        }
 
-        if ($where) {
+        $sql = "SELECT $fields FROM `$table`";
+
+        if ($where && is_array($where)) {
             $sql .= " WHERE ";
             $i = 0;
             foreach ($where as $k => $v) {
-                $sql .= "$k = ?";
+                if (!preg_match('/^[a-zA-Z0-9_]+$/', $k)) {
+                    return ['data' => [], 'error' => 1, 'error_msg' => "Invalid column name in WHERE clause"];
+                }
+                $sql .= "`$k` = ?";
                 $params[] = $v;
                 if ($i < count($where) - 1) {
                     $sql .= " AND ";
@@ -64,23 +76,36 @@ class CRUD {
         }
 
         if ($sort) {
-            $sql .= " ORDER BY $sort $sort_type";
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $sort)) {
+                return ['data' => [], 'error' => 1, 'error_msg' => "Invalid sort column"];
+            }
+            $sql .= " ORDER BY `$sort` " . (strtoupper($sort_type) === 'DESC' ? 'DESC' : 'ASC');
         }
 
         if ($limit !== false) {
+            $limit = (int)$limit;
+            if ($limit <= 0) {
+                return ['data' => [], 'error' => 1, 'error_msg' => "Invalid limit value"];
+            }
             $sql .= " LIMIT ?";
-            $params[] = (int)$limit;
+            $params[] = $limit;
             
             if ($offset !== false) {
+                $offset = (int)$offset;
+                if ($offset < 0) {
+                    return ['data' => [], 'error' => 1, 'error_msg' => "Invalid offset value"];
+                }
                 $sql .= " OFFSET ?";
-                $params[] = (int)$offset;
+                $params[] = $offset;
             }
         }
 
         $stmt = $this->connect->prepare($sql);
         if ($stmt) {
             if (!empty($params)) {
-                $this->bind_params($stmt, $params);
+                if (!$this->bind_params($stmt, $params)) {
+                    return ['data' => [], 'error' => 1, 'error_msg' => "Parameter binding failed"];
+                }
             }
             
             if ($stmt->execute()) {
@@ -89,10 +114,8 @@ class CRUD {
                     while ($r = $result->fetch_object()) {
                         $data[] = $r;
                     }
-                } else {
-                    $error = 1;
-                    $error_msg = "No data available";
                 }
+                // No data is not considered an error - returns empty array
             } else {
                 $error = 1;
                 $error_msg = $stmt->error;
@@ -110,17 +133,39 @@ class CRUD {
         $data = '';
         $error = 0;
         $error_msg = "";
+        
+        if (!is_array($fields) || empty($fields)) {
+            return ['data' => '', 'error' => 1, 'error_msg' => "No fields provided for insert"];
+        }
+
+        // Validate table name
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+            return ['data' => '', 'error' => 1, 'error_msg' => "Invalid table name"];
+        }
+
+        $columns = [];
+        $placeholders = [];
         $params = [];
         
-        $columns = implode(", ", array_keys($fields));
-        $placeholders = implode(", ", array_fill(0, count($fields), "?"));
-        $params = array_values($fields);
+        foreach ($fields as $k => $v) {
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $k)) {
+                return ['data' => '', 'error' => 1, 'error_msg' => "Invalid column name"];
+            }
+            $columns[] = "`$k`";
+            $placeholders[] = "?";
+            $params[] = $v;
+        }
 
-        $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+        $columns = implode(", ", $columns);
+        $placeholders = implode(", ", $placeholders);
+
+        $sql = "INSERT INTO `$table` ($columns) VALUES ($placeholders)";
         
         $stmt = $this->connect->prepare($sql);
         if ($stmt) {
-            $this->bind_params($stmt, $params);
+            if (!$this->bind_params($stmt, $params)) {
+                return ['data' => '', 'error' => 1, 'error_msg' => "Parameter binding failed"];
+            }
             
             if ($stmt->execute()) {
                 $data = $stmt->insert_id;
@@ -141,29 +186,49 @@ class CRUD {
         $data = '';
         $error = 0;
         $error_msg = "";
+        
+        if (!is_array($fields) || empty($fields)) {
+            return ['data' => '', 'error' => 1, 'error_msg' => "No fields provided for update"];
+        }
+
+        if (!is_array($where) || empty($where)) {
+            return ['data' => '', 'error' => 1, 'error_msg' => "No conditions provided for update"];
+        }
+
+        // Validate table name
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+            return ['data' => '', 'error' => 1, 'error_msg' => "Invalid table name"];
+        }
+
+        $sql = "UPDATE `$table` SET ";
+        $setParts = [];
         $params = [];
         
-        $sql = "UPDATE $table SET ";
-        $setParts = [];
         foreach ($fields as $k => $v) {
-            $setParts[] = "$k = ?";
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $k)) {
+                return ['data' => '', 'error' => 1, 'error_msg' => "Invalid column name in SET clause"];
+            }
+            $setParts[] = "`$k` = ?";
             $params[] = $v;
         }
         $sql .= implode(", ", $setParts);
 
-        if ($where) {
-            $sql .= " WHERE ";
-            $whereParts = [];
-            foreach ($where as $k => $v) {
-                $whereParts[] = "$k = ?";
-                $params[] = $v;
+        $sql .= " WHERE ";
+        $whereParts = [];
+        foreach ($where as $k => $v) {
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $k)) {
+                return ['data' => '', 'error' => 1, 'error_msg' => "Invalid column name in WHERE clause"];
             }
-            $sql .= implode(" AND ", $whereParts);
+            $whereParts[] = "`$k` = ?";
+            $params[] = $v;
         }
+        $sql .= implode(" AND ", $whereParts);
 
         $stmt = $this->connect->prepare($sql);
         if ($stmt) {
-            $this->bind_params($stmt, $params);
+            if (!$this->bind_params($stmt, $params)) {
+                return ['data' => '', 'error' => 1, 'error_msg' => "Parameter binding failed"];
+            }
             
             if ($stmt->execute()) {
                 $data = $stmt->affected_rows;
@@ -184,24 +249,33 @@ class CRUD {
         $data = '';
         $error = 0;
         $error_msg = "";
+        
+        if (!is_array($where) || empty($where)) {
+            return ['data' => '', 'error' => 1, 'error_msg' => "No conditions provided for delete"];
+        }
+
+        // Validate table name
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+            return ['data' => '', 'error' => 1, 'error_msg' => "Invalid table name"];
+        }
+
+        $sql = "DELETE FROM `$table` WHERE ";
+        $whereParts = [];
         $params = [];
         
-        $sql = "DELETE FROM $table";
-        
-        if ($where) {
-            $sql .= " WHERE ";
-            $whereParts = [];
-            foreach ($where as $k => $v) {
-                $whereParts[] = "$k = ?";
-                $params[] = $v;
+        foreach ($where as $k => $v) {
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $k)) {
+                return ['data' => '', 'error' => 1, 'error_msg' => "Invalid column name in WHERE clause"];
             }
-            $sql .= implode(" AND ", $whereParts);
+            $whereParts[] = "`$k` = ?";
+            $params[] = $v;
         }
+        $sql .= implode(" AND ", $whereParts);
 
         $stmt = $this->connect->prepare($sql);
         if ($stmt) {
-            if (!empty($params)) {
-                $this->bind_params($stmt, $params);
+            if (!$this->bind_params($stmt, $params)) {
+                return ['data' => '', 'error' => 1, 'error_msg' => "Parameter binding failed"];
             }
             
             if ($stmt->execute()) {
@@ -226,4 +300,3 @@ class CRUD {
         }
     }
 }
-?>
