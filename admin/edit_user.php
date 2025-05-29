@@ -1,8 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true || 
-    !isset($_SESSION['user']) || !is_object($_SESSION['user']) || $_SESSION['user']->role !== 'admin') {
-    $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
+if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true || $_SESSION['user']->role !== 'admin') {
     header("Location: ../login.php");
     exit();
 }
@@ -47,13 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm_password = $_POST['confirm_password'] ?? '';
     $full_name = trim($_POST['full_name'] ?? $full_name);
     $role = $_POST['role'] ?? $role;
-    $is_active = isset($_POST['is_active']) ? 1 : $is_active;
+    $is_active = isset($_POST['is_active']) ? 1 : 0;
 
     // Validation
     if (empty($username)) {
         $errors[] = "Username is required";
     } elseif (strlen($username) < 4) {
         $errors[] = "Username must be at least 4 characters";
+    } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        $errors[] = "Username can only contain letters, numbers and underscores";
     } else {
         $check = $mysqli->common_select('users', 'id', ['username' => $username]);
         if ($check['error'] == 0) {
@@ -82,8 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if (!empty($password) && $password !== $confirm_password) {
-        $errors[] = "Passwords do not match";
+    if (!empty($password)) {
+        if (strlen($password) < 4) {
+            $errors[] = "Password must be at least 4 characters";
+        } elseif ($password !== $confirm_password) {
+            $errors[] = "Passwords do not match";
+        }
     }
 
     if (empty($full_name)) {
@@ -108,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!empty($password)) {
             $user_data['password'] = password_hash($password, PASSWORD_BCRYPT);
+            $user_data['password_changed_at'] = date('Y-m-d H:i:s');
         }
 
         // Handle profile picture upload
@@ -117,27 +122,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mkdir($upload_dir, 0755, true);
             }
             
-            if (!empty($user->profile_pic)) {
-                $old_file = __DIR__ . '/../' . $user->profile_pic;
-                if (file_exists($old_file)) {
-                    unlink($old_file);
-                }
+            // Remove old profile pic if exists
+            if (!empty($user->profile_pic) && file_exists(__DIR__ . '/../' . $user->profile_pic)) {
+                unlink(__DIR__ . '/../' . $user->profile_pic);
             }
             
-            $file_ext = pathinfo($_FILES['profile_pic']['name'], PATHINFO_EXTENSION);
+            $file_ext = strtolower(pathinfo($_FILES['profile_pic']['name'], PATHINFO_EXTENSION));
             $file_name = "user_{$user_id}_" . time() . ".{$file_ext}";
             $file_path = $upload_dir . $file_name;
             
             $valid_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-            if (in_array(strtolower($file_ext), $valid_extensions)) {
-                if (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $file_path)) {
-                    $user_data['profile_pic'] = 'uploads/profile_pics/' . $file_name;
-                } else {
-                    $errors[] = "Failed to upload profile picture";
-                }
-            } else {
+            $max_size = 2 * 1024 * 1024; // 2MB
+            
+            if (!in_array($file_ext, $valid_extensions)) {
                 $errors[] = "Invalid file type. Only JPG, PNG, and GIF are allowed";
+            } elseif ($_FILES['profile_pic']['size'] > $max_size) {
+                $errors[] = "File size exceeds 2MB limit";
+            } elseif (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $file_path)) {
+                $user_data['profile_pic'] = 'uploads/profile_pics/' . $file_name;
+            } else {
+                $errors[] = "Failed to upload profile picture";
             }
+        } elseif (isset($_POST['remove_profile_pic']) && $_POST['remove_profile_pic'] == 'on') {
+            if (!empty($user->profile_pic) && file_exists(__DIR__ . '/../' . $user->profile_pic)) {
+                unlink(__DIR__ . '/../' . $user->profile_pic);
+            }
+            $user_data['profile_pic'] = null;
         }
 
         if (empty($errors)) {
@@ -169,24 +179,11 @@ require_once __DIR__ . '/../requires/topbar.php';
 
 <div class="container">
     <div class="page-inner">
-        <div class="page-header">
-            <h4 class="page-title">Edit User</h4>
-            <ul class="breadcrumbs">
-                <li class="nav-home">
-                    <a href="../dashboard.php"><i class="flaticon-home"></i></a>
-                </li>
-                <li class="separator"><i class="flaticon-right-arrow"></i></li>
-                <li class="nav-item"><a href="view_user.php">User Management</a></li>
-                <li class="separator"><i class="flaticon-right-arrow"></i></li>
-                <li class="nav-item"><span>Edit User</span></li>
-            </ul>
-        </div>
-
         <div class="row">
             <div class="col-md-8">
-                <div class="card shadow overflow-hidden rounded-3">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0"><i class="bi bi-person-gear"></i> Edit User Details</h4>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Edit User Details</div>
                     </div>
                     <div class="card-body">
                         <?php if (!empty($errors)): ?>
@@ -202,12 +199,12 @@ require_once __DIR__ . '/../requires/topbar.php';
                         <form method="POST" enctype="multipart/form-data" id="editUserForm">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="username" class="form-label">Username</label>
+                                    <label for="username" class="form-label">Username *</label>
                                     <input type="text" class="form-control" id="username" name="username" 
                                            value="<?= htmlspecialchars($username) ?>" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">Email</label>
+                                    <label for="email" class="form-label">Email *</label>
                                     <input type="email" class="form-control" id="email" name="email" 
                                            value="<?= htmlspecialchars($email) ?>" required>
                                 </div>
@@ -218,17 +215,17 @@ require_once __DIR__ . '/../requires/topbar.php';
                                     <label for="password" class="form-label">New Password</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control" id="password" name="password">
-                                        <button class="btn btn-outline-secondary password-toggle" type="button">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button">
                                             <i class="fa fa-eye"></i>
                                         </button>
                                     </div>
-                                    <small class="text-muted">Leave blank to keep current password</small>
+                                    <small class="text-muted">Leave blank to keep current password (min 8 chars)</small>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="confirm_password" class="form-label">Confirm Password</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control" id="confirm_password" name="confirm_password">
-                                        <button class="btn btn-outline-secondary password-toggle" type="button">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button">
                                             <i class="fa fa-eye"></i>
                                         </button>
                                     </div>
@@ -236,15 +233,15 @@ require_once __DIR__ . '/../requires/topbar.php';
                             </div>
                             
                             <div class="mb-3">
-                                <label for="full_name" class="form-label">Full Name</label>
+                                <label for="full_name" class="form-label">Full Name *</label>
                                 <input type="text" class="form-control" id="full_name" name="full_name" 
                                        value="<?= htmlspecialchars($full_name) ?>" required>
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="role" class="form-label">Role</label>
-                                    <select class="form-select" id="role" name="role" required>
+                                    <label for="role" class="form-label">Role *</label>
+                                    <select class="form-control" id="role" name="role" required>
                                         <option value="cashier" <?= $role === 'cashier' ? 'selected' : '' ?>>Cashier</option>
                                         <option value="inventory" <?= $role === 'inventory' ? 'selected' : '' ?>>Inventory Manager</option>
                                         <option value="manager" <?= $role === 'manager' ? 'selected' : '' ?>>Manager</option>
@@ -252,27 +249,25 @@ require_once __DIR__ . '/../requires/topbar.php';
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <div class="form-group">
-                                        <label>Status</label>
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" 
-                                                   <?= $is_active ? 'checked' : '' ?>>
-                                            <label class="custom-control-label" for="is_active">Active</label>
-                                        </div>
+                                    <label class="form-label">Status</label>
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" 
+                                               <?= $is_active ? 'checked' : '' ?>>
+                                        <label class="custom-control-label" for="is_active">Active</label>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="profile_pic" class="form-label">Profile Picture</label>
-                                <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/*">
+                                <input type="file" class="form-control-file" id="profile_pic" name="profile_pic" accept="image/*">
                                 <small class="text-muted">Max 2MB (JPG, PNG, GIF)</small>
                                 <?php if (!empty($user->profile_pic)): ?>
                                     <div class="mt-2">
                                         <img src="<?= BASE_URL . $user->profile_pic ?>" alt="Profile" class="img-thumbnail" style="max-height: 100px;">
-                                        <div class="form-check mt-2">
-                                            <input class="form-check-input" type="checkbox" id="remove_profile_pic" name="remove_profile_pic">
-                                            <label class="form-check-label" for="remove_profile_pic">Remove current picture</label>
+                                        <div class="custom-control custom-checkbox mt-2">
+                                            <input type="checkbox" class="custom-control-input" id="remove_profile_pic" name="remove_profile_pic">
+                                            <label class="custom-control-label" for="remove_profile_pic">Remove current picture</label>
                                         </div>
                                     </div>
                                 <?php endif; ?>
@@ -293,8 +288,8 @@ require_once __DIR__ . '/../requires/topbar.php';
                     <div class="card-body">
                         <div class="text-center mb-3">
                             <div class="avatar avatar-xxl">
-                                <img src="<?= !empty($user->profile_pic) ? BASE_URL . $user->profile_pic : BASE_URL . 'assets/img/default-profile.png' ?>" 
-                                     alt="Profile" class="avatar-img rounded-circle">
+                                <img src="<?= !empty($user->profile_pic) ? BASE_URL . $user->profile_pic : BASE_URL . 'assets/img/Despecible me.jpg' ?>" 
+                                     alt="Profile" class="avatar-img rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
                             </div>
                             <h4 class="mt-3"><?= htmlspecialchars($full_name) ?></h4>
                             <p class="text-muted"><?= ucfirst($role) ?></p>

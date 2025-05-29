@@ -17,7 +17,7 @@
         </nav>
         <div class="copyright">
            © <?= date('Y') ?> POS System made with <i class="fa fa-heart heart text-danger"></i> by
-          <a href="https://github.com/kmt-dev80?tab=repositories">kmt_dev80</a>&<a href="https://github.com/ImtiazAhmedArefin">ImtiazAhmed
+          <a href="https://github.com/kmt-dev80?tab=repositories">kmt_dev80 </a>&<a href="https://github.com/ImtiazAhmedArefin"> ImtiazAhmed
         </div>
         <div>
           Distributed by

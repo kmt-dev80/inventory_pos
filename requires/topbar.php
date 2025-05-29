@@ -294,13 +294,13 @@
               href="#"
               aria-expanded="false"
             >
-              <div class="avatar-sm"><!-- This is profile picture -->
-                <img
-                  src="<?= BASE_URL ?>assets/img/profile.jpg"
-                  alt="..."
-                  class="avatar-img rounded-circle"
+             <div class="avatar-sm">
+                <img src="<?= !empty($_SESSION['user']->profile_pic) ? BASE_URL . $_SESSION['user']->profile_pic : BASE_URL . 'assets/img/Despecible me.jpg' ?>"
+                alt="Profile picture"
+                class="avatar-img rounded-circle"
+                onerror="this.src='<?= BASE_URL ?>assets/img/Despecible me.jpg'"
                 />
-              </div>
+            </div>
               <span class="profile-username">
                 <span class="op-7">Hi,</span>
                 <span class="fw-bold">Users</span>

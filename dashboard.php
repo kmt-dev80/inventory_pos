@@ -11,7 +11,7 @@
 ?>
 <div class="container">
     <div class="page-inner">
-           <h2>Welcome to the Dashboard</h2>
+           <h2>This is a Dashboard.There is Nothing here.</h2>
     </div>
 </div>
  <?php require_once __DIR__ . '/requires/footer.php'; ?>

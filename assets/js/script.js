@@ -1,35 +1,3 @@
-/*document.addEventListener('DOMContentLoaded', function() {
-    // Handle both register and edit forms with one function
-    function setupFormValidation(formId, passwordId, confirmPasswordId) {
-        const form = document.getElementById(formId);
-        
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                const password = document.getElementById(passwordId).value;
-                const confirmPassword = document.getElementById(confirmPasswordId).value;
-                
-                // Only validate if password field has value (for edit form)
-                if (passwordId === 'new_password' && !password) {
-                    return true; // Skip validation if not changing password
-                }
-                
-                if (password !== confirmPassword) {
-                    e.preventDefault();
-                    alert('Passwords do not match!');
-                    document.getElementById(confirmPasswordId).focus();
-                    return false;
-                }
-                return true;
-            });
-        }
-    }
-
-    // Initialize validation for both forms
-    setupFormValidation('registerForm', 'password', 'confirm_password');
-    setupFormValidation('editUserForm', 'new_password', 'confirm_password');
-});*/
-
-
 $(document).ready(function() {
     // Password visibility toggle for all password fields
     $('.password-toggle').on('click', function() {

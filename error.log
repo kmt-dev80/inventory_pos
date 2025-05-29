@@ -1,4 +1,6 @@
-i want delete category individually if i want only delete sub_category or child category, and a checking features that if a products has include under the any categories it will revoke delete> you can't delete it under this category product exist[28-May-2025 22:44:57 Asia/Dhaka] PHP Warning:  Undefined property: stdClass::$sub_category in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
+i want delete category individually if i want only delete sub_category or child category, and a checking features that if a products has include under the any categories it will revoke delete> 
+you can't delete it under this category product exist
+[28-May-2025 22:44:57 Asia/Dhaka] PHP Warning:  Undefined property: stdClass::$sub_category in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
 [28-May-2025 22:44:57 Asia/Dhaka] PHP Warning:  Attempt to read property "category_id" on null in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
 [28-May-2025 22:45:29 Asia/Dhaka] PHP Warning:  Undefined property: stdClass::$sub_category in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
 [28-May-2025 22:45:29 Asia/Dhaka] PHP Warning:  Attempt to read property "category_id" on null in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200

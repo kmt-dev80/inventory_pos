@@ -4,7 +4,7 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     header("Location: ../../login.php");
     exit();
 }
-require_once __DIR__ . '/../../db_plugin.php'; 
+require_once __DIR__ . '/../../db_plugin.php';
 $error = '';
 $success = '';
 $main_categories = [];
@@ -192,7 +192,9 @@ require_once __DIR__ . '/../../requires/topbar.php';
                     <?php endif; ?>
                     
                     <?php if ($success): ?>
-                        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+                        <div class="alert alert-success">
+                            <?= htmlspecialchars($success) ?>
+                        </div>
                     <?php endif; ?>
                     
                     <div class="row">
