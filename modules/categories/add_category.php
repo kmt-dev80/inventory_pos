@@ -183,8 +183,8 @@ require_once __DIR__ . '/../../requires/topbar.php';
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">Manage Categories</h1>
                         <a href="view_categories.php" class="btn btn-secondary btn-round ms-auto">
-                        <i class="fas fa-arrow-right"></i> View Categories
-                    </a>
+                            <i class="fas fa-arrow-right"></i> View Categories
+                        </a>
                     </div>
                     
                     <?php if ($error): ?>

@@ -132,13 +132,18 @@
           <div class="collapse" id="tables">
             <ul class="nav nav-collapse">
               <li>
-                <a href="add_supplier">
+                <a href="<?= BASE_URL ?>modules/suppliers/add_supplier.php">
                   <span class="sub-item">Add Supplier</span>
                 </a>
               </li>
               <li>
-                <a href="view_suppliers">
+                <a href="<?= BASE_URL ?>modules/suppliers/view_suppliers.php">
                   <span class="sub-item">View Suppliers</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/suppliers/edit_supplier.php">
+                  <span class="sub-item">Manage Supplier</span>
                 </a>
               </li>
             </ul>
@@ -153,13 +158,18 @@
           <div class="collapse" id="maps">
             <ul class="nav nav-collapse">
               <li>
-                <a href="add_customer.php">
+                <a href="<?= BASE_URL ?>modules/customers/add_customer.php">
                   <span class="sub-item">Add Customer</span>
                 </a>
               </li>
               <li>
-                <a href="view_customers">
+                <a href="<?= BASE_URL ?>modules/customers/view_customers.php">
                   <span class="sub-item">View Customers</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/customers/edit_customer.php">
+                  <span class="sub-item">Manage Customers</span>
                 </a>
               </li>
             </ul>

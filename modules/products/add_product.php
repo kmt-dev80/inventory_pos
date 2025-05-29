@@ -112,13 +112,16 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     <div class="page-inner">
         <div class="page-header">
             <h4 class="page-title">Add New Product</h4>
+             <a href="view_product.php" class="btn btn-secondary btn-round ms-auto">
+                <i class="fas fa-arrow-right"></i> View Products
+             </a>
         </div>
         
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">Product Information</div>
+                        <div class="card-title">Product Information</div>  
                     </div>
                     <div class="card-body">
                         <?php if ($error): ?>

@@ -10,6 +10,16 @@ require_once __DIR__ . '/../../db_plugin.php';
 
 $error = '';
 $success = '';
+$customer_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Load customer data
+$result = $mysqli->common_select('customers', '*', ['id' => $customer_id]);
+if ($result['error'] || empty($result['data'])) {
+    $_SESSION['error'] = 'Customer not found';
+    header("Location: view_customers.php");
+    exit();
+}
+$customer = (array)$result['data'][0];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
@@ -20,8 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($name)) {
         $error = 'Customer name is required';
     } else {
-        // Check if customer already exists
-        $check = $mysqli->common_select('customers', 'id', ['name' => $name]);
+        // Check if customer already exists (excluding current customer)
+        $check = $mysqli->common_select('customers', 'id', [
+            'name' => $name,
+            'id!=' => $customer_id
+        ]);
+        
         if (!$check['error'] && !empty($check['data'])) {
             $error = 'Customer already exists';
         } else {
@@ -32,13 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'address' => $address
             ];
             
-            $result = $mysqli->common_insert('customers', $data);
+            $result = $mysqli->common_update('customers', $data, ['id' => $customer_id]);
             if (!$result['error']) {
-                $_SESSION['success'] = 'Customer added successfully';
+                $_SESSION['success'] = 'Customer updated successfully';
                 header("Location: view_customers.php");
                 exit();
             } else {
-                $error = 'Error adding customer: ' . $result['error_msg'];
+                $error = 'Error updating customer: ' . $result['error_msg'];
             }
         }
     }
@@ -52,7 +66,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 <div class="container">
     <div class="page-inner">
         <div class="page-header">
-            <h4 class="page-title">Add New Customer</h4>
+            <h4 class="page-title">Edit Customer</h4>
             <div class="ms-auto">
                 <a href="view_customers.php" class="btn btn-primary btn-round">
                     <i class="fas fa-list"></i> View Customers
@@ -64,9 +78,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
             <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
         
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success']) ?></div>
-            <?php unset($_SESSION['success']); ?>
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
+            <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
         
         <div class="row">
@@ -76,23 +90,26 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                         <form method="post">
                             <div class="form-group">
                                 <label for="name">Customer Name *</label>
-                                <input type="text" class="form-control" id="name" name="name" required>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="<?= htmlspecialchars($customer['name']) ?>" required>
                             </div>
                             <div class="form-group">
                                 <label for="phone">Phone Number</label>
-                                <input type="text" class="form-control" id="phone" name="phone">
+                                <input type="text" class="form-control" id="phone" name="phone" 
+                                       value="<?= htmlspecialchars($customer['phone']) ?>">
                             </div>
                             <div class="form-group">
                                 <label for="email">Email Address</label>
-                                <input type="email" class="form-control" id="email" name="email">
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?= htmlspecialchars($customer['email']) ?>">
                             </div>
                             <div class="form-group">
                                 <label for="address">Address</label>
-                                <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                                <textarea class="form-control" id="address" name="address" rows="3"><?= htmlspecialchars($customer['address']) ?></textarea>
                             </div>
                             <div class="form-group text-right">
                                 <a href="view_customers.php" class="btn btn-secondary">Cancel</a>
-                                <button type="submit" class="btn btn-primary">Add Customer</button>
+                                <button type="submit" class="btn btn-primary">Update Customer</button>
                             </div>
                         </form>
                     </div>

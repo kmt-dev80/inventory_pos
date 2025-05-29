@@ -17,7 +17,7 @@
         </nav>
         <div class="copyright">
            © <?= date('Y') ?> POS System made with <i class="fa fa-heart heart text-danger"></i> by
-          <a href="https://github.com/kmt-dev80?tab=repositories">kmt_dev80</a>
+          <a href="https://github.com/kmt-dev80?tab=repositories">kmt_dev80</a>&<a href="https://github.com/ImtiazAhmedArefin">ImtiazAhmed
         </div>
         <div>
           Distributed by
@@ -253,7 +253,7 @@
 <!-- Kaiadmin JS -->
 <script src="<?= BASE_URL ?>assets/js/kaiadmin.min.js"></script>
 
-<!-- Kaiadmin DEMO methods, don't include it in your project! -->
+
 <script src="<?= BASE_URL ?>assets/js/theme-persistence.js"></script>
 <script src="<?= BASE_URL ?>assets/js/script.js"></script>
 
@@ -262,6 +262,8 @@ $(document).ready(function() {
     $('#productTable').DataTable();
     $('#trashTable').DataTable();
     $('#brandTable').DataTable();
+    $('#customerTable').DataTable();
+    $('#supplierTable').DataTable();
 });
 
         
