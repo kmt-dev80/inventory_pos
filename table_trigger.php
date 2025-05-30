@@ -176,6 +176,7 @@ $createTables = [
         supplier_id INT NULL,
         reference_no VARCHAR(50) NULL,
         payment_method VARCHAR(20) DEFAULT 'cash',
+        payment_status ENUM('pending', 'partial', 'paid') DEFAULT 'pending',
         subtotal DECIMAL(10,2) DEFAULT 0,
         discount DECIMAL(5,2) DEFAULT 0,
         vat DECIMAL(10,2) NOT NULL DEFAULT 0,

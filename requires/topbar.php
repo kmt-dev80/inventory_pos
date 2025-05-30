@@ -295,7 +295,7 @@
               aria-expanded="false"
             >
              <div class="avatar-sm">
-                <img src="<?= !empty($_SESSION['user']->profile_pic) ? BASE_URL . $_SESSION['user']->profile_pic : BASE_URL . 'assets/img/Despecible me.jpg' ?>"
+                <img src="<?= !empty($_SESSION['user']->profile_pic) ? BASE_URL . $_SESSION['user']->profile_pic : BASE_URL . 'assets/img/nightmode.jpg' ?>"
                 alt="Profile picture"
                 class="avatar-img rounded-circle"
                 onerror="this.src='<?= BASE_URL ?>assets/img/Despecible me.jpg'"
@@ -312,7 +312,7 @@
                   <div class="user-box">
                     <div class="avatar-lg">
                       <img
-                        src="<?= BASE_URL ?>assets/img/profile.jpg"
+                        src="<?= BASE_URL ?>assets/img/nightmode.jpg"
                         alt="image profile"
                         class="avatar-img rounded"
                       />
