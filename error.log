@@ -1,8 +1,0 @@
-[28-May-2025 22:44:57 Asia/Dhaka] PHP Warning:  Undefined property: stdClass::$sub_category in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
-[28-May-2025 22:44:57 Asia/Dhaka] PHP Warning:  Attempt to read property "category_id" on null in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
-[28-May-2025 22:45:29 Asia/Dhaka] PHP Warning:  Undefined property: stdClass::$sub_category in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
-[28-May-2025 22:45:29 Asia/Dhaka] PHP Warning:  Attempt to read property "category_id" on null in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
-[28-May-2025 22:49:41 Asia/Dhaka] PHP Warning:  Undefined property: stdClass::$sub_category in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
-[28-May-2025 22:49:41 Asia/Dhaka] PHP Warning:  Attempt to read property "category_id" on null in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
-[28-May-2025 23:06:33 Asia/Dhaka] PHP Warning:  Undefined property: stdClass::$sub_category in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
-[28-May-2025 23:06:33 Asia/Dhaka] PHP Warning:  Attempt to read property "category_id" on null in D:\Visual Studio\xampp8.2.12\htdocs\inventory_pos\modules\categories\edit_category.php on line 200
