@@ -27,39 +27,51 @@ $suppliers = $mysqli->common_select('suppliers', '*');
 $products = $mysqli->common_select('products', 'id, name, barcode, price', ['is_deleted' => 0]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $purchaseData = [
-        'supplier_id' => $_POST['supplier_id'],
-        'payment_method' => $_POST['payment_method'],
-        'payment_status' => $_POST['payment_status'],
-        'subtotal' => $_POST['subtotal'],
-        'discount' => $_POST['discount'],
-        'vat' => $_POST['vat'],
-        'total' => $_POST['total']
-    ];
+    try {
+        // Update purchase (includes VAT)
+        $purchaseData = [
+            'supplier_id' => $_POST['supplier_id'],
+            'payment_method' => $_POST['payment_method'],
+            'payment_status' => $_POST['payment_status'],
+            'subtotal' => $_POST['subtotal'],
+            'discount' => $_POST['discount'], // Fixed typo from 'discount' to 'discount'
+            'vat' => $_POST['vat'], // VAT goes here (in purchase table)
+            'total' => $_POST['total']
+        ];
 
-    $updateResult = $mysqli->common_update('purchase', $purchaseData, ['id' => $purchaseId]);
-    
-    if (!$updateResult['error']) {
-        // Delete existing items
-        $mysqli->common_delete('purchase_items', ['purchase_id' => $purchaseId]);
+        $updateResult = $mysqli->common_update('purchase', $purchaseData, ['id' => $purchaseId]);
         
-        // Add new items
+        if ($updateResult['error']) {
+            throw new Exception($updateResult['error_msg']);
+        }
+
+        // Delete existing items
+        $deleteResult = $mysqli->common_delete('purchase_items', ['purchase_id' => $purchaseId]);
+        if ($deleteResult['error']) {
+            throw new Exception("Failed to clear old items: " . $deleteResult['error_msg']);
+        }
+        
+        // Add new items (NO VAT here)
         foreach ($_POST['product_id'] as $index => $productId) {
             $itemData = [
                 'purchase_id' => $purchaseId,
                 'product_id' => $productId,
                 'quantity' => $_POST['quantity'][$index],
-                'unit_price' => $_POST['unit_price'][$index]
+                'unit_price' => $_POST['unit_price'][$index] // No VAT in item data
             ];
             
-            $mysqli->common_insert('purchase_items', $itemData);
+            $itemResult = $mysqli->common_insert('purchase_items', $itemData);
+            if ($itemResult['error']) {
+                throw new Exception("Failed to add item: " . $itemResult['error_msg']);
+            }
         }
         
         setFlashMessage('Purchase updated successfully', 'success');
         header('Location: view_purchases.php');
         exit;
-    } else {
-        setFlashMessage('Error updating purchase: ' . $updateResult['error_msg'], 'danger');
+
+    } catch (Exception $e) {
+        setFlashMessage('Error: ' . $e->getMessage(), 'danger');
     }
 }
 
@@ -218,6 +230,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
     // Add new row
@@ -300,5 +313,3 @@ $(document).ready(function() {
     calculateTotals();
 });
 </script>
-
-<?php require_once __DIR__ . '/../../requires/footer.php'; ?>

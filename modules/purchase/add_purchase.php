@@ -11,52 +11,66 @@ $suppliers = $mysqli->common_select('suppliers', '*');
 $products = $mysqli->common_select('products', 'id, name, barcode, price', ['is_deleted' => 0]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $purchaseData = [
-        'supplier_id' => $_POST['supplier_id'],
-        'reference_no' => generateReferenceNo('PUR'),
-        'payment_method' => $_POST['payment_method'],
-        'payment_status' => $_POST['payment_status'],
-        'subtotal' => $_POST['subtotal'],
-        'discount' => $_POST['discount'],
-        'vat' => $_POST['vat'],
-        'total' => $_POST['total'],
-        'user_id' => $_SESSION['user']->id
-    ];
+    try {
+        // Insert into `purchase` (includes VAT)
+        $purchaseData = [
+            'supplier_id'    => $_POST['supplier_id'],
+            'reference_no'   => generateReferenceNo('PUR'),
+            'payment_method' => $_POST['payment_method'],
+            'payment_status' => $_POST['payment_status'],
+            'subtotal'       => $_POST['subtotal'],
+            'discount'       => $_POST['discount'],
+            'vat'            => $_POST['vat'],  // VAT goes here
+            'total'          => $_POST['total'],
+            'user_id'        => $_SESSION['user']->id
+        ];
 
-    $purchaseResult = $mysqli->common_insert('purchase', $purchaseData);
-    
-    if (!$purchaseResult['error']) {
+        $purchaseResult = $mysqli->common_insert('purchase', $purchaseData);
+        
+        if ($purchaseResult['error']) {
+            throw new Exception($purchaseResult['error_msg']);
+        }
+
         $purchaseId = $purchaseResult['data'];
         
+        // Insert items into `purchase_items` (NO VAT here)
         foreach ($_POST['product_id'] as $index => $productId) {
             $itemData = [
                 'purchase_id' => $purchaseId,
-                'product_id' => $productId,
-                'quantity' => $_POST['quantity'][$index],
-                'unit_price' => $_POST['unit_price'][$index]
+                'product_id'  => $productId,
+                'quantity'    => $_POST['quantity'][$index],
+                'unit_price'  => $_POST['unit_price'][$index]  // No VAT in item-level
             ];
             
-            $mysqli->common_insert('purchase_items', $itemData);
+            $itemResult = $mysqli->common_insert('purchase_items', $itemData);
+            if ($itemResult['error']) {
+                throw new Exception("Failed to add item #$productId: " . $itemResult['error_msg']);
+            }
         }
         
+        // Handle payment if status is paid/partial
         if ($_POST['payment_status'] === 'partial' || $_POST['payment_status'] === 'paid') {
             $paymentData = [
-                'supplier_id' => $_POST['supplier_id'],
-                'purchase_id' => $purchaseId,
-                'type' => 'payment',
-                'amount' => $_POST['amount_paid'],
+                'supplier_id'    => $_POST['supplier_id'],
+                'purchase_id'   => $purchaseId,
+                'type'           => 'payment',
+                'amount'        => $_POST['amount_paid'],
                 'payment_method' => $_POST['payment_method'],
-                'description' => 'Initial payment for purchase #' . $purchaseId
+                'description'    => 'Initial payment for purchase #' . $purchaseId
             ];
             
-            $mysqli->common_insert('purchase_payment', $paymentData);
+            $paymentResult = $mysqli->common_insert('purchase_payment', $paymentData);
+            if ($paymentResult['error']) {
+                throw new Exception("Payment record failed: " . $paymentResult['error_msg']);
+            }
         }
         
-        setFlashMessage('Purchase added successfully', 'success');
+        setFlashMessage('Purchase added successfully!', 'success');
         header('Location: view_purchases.php');
         exit;
-    } else {
-        setFlashMessage('Error adding purchase: ' . $purchaseResult['error_msg'], 'danger');
+
+    } catch (Exception $e) {
+        setFlashMessage('Error: ' . $e->getMessage(), 'danger');
     }
 }
 
@@ -108,9 +122,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     <div class="form-group">
                                         <label for="payment_status">Payment Status</label>
                                         <select class="form-control" id="payment_status" name="payment_status" required>
+                                            <option value="paid">Paid</option>
                                             <option value="pending">Pending</option>
                                             <option value="partial">Partial</option>
-                                            <option value="paid">Paid</option>
                                         </select>
                                     </div>
                                 </div>
@@ -201,6 +215,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
     // Show/hide amount paid field based on payment status
@@ -289,5 +304,3 @@ $(document).ready(function() {
     $('#discount, #vat').on('input', calculateTotals);
 });
 </script>
-
-<?php require_once __DIR__ . '/../../requires/footer.php'; ?>

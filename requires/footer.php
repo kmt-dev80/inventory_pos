@@ -1,4 +1,4 @@
-<footer class="footer">
+<!--  <footer class="footer">
       <div class="container-fluid d-flex justify-content-between">
         <nav class="pull-left">
           <ul class="nav">
@@ -27,7 +27,7 @@
   </footer>
 </div>
 
-  <!-- Custom template | don't include it in your project! -->
+  
   <div class="custom-template">
     <div class="title">Settings</div>
     <div class="custom-content">
@@ -220,8 +220,7 @@
       <i class="icon-settings"></i>
     </div>
   </div>
-  <!-- End Custom template -->
-</div>
+</div>-->
 <!--   Core JS Files   -->
 <script src="<?= BASE_URL ?>assets/js/core/jquery-3.7.1.min.js"></script>
 <script src="<?= BASE_URL ?>assets/js/products.js"></script>

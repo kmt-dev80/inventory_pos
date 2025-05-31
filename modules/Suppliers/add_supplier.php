@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $mysqli->common_insert('suppliers', $data);
             if (!$result['error']) {
                 $_SESSION['success'] = 'Supplier added successfully';
-                header("Location: view_supplier.php");
+                header("Location: view_suppliers.php");
                 exit();
             } else {
                 $error = 'Error adding supplier: ' . $result['error_msg'];
