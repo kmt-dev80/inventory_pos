@@ -178,11 +178,6 @@
                   <span class="sub-item">View Users</span>
                 </a>
               </li>
-              <li>
-                <a href="<?= BASE_URL ?>admin/edit_user.php">
-                  <span class="sub-item">Manage Users</span>
-                </a>
-              </li>
             </ul>
           </div>
         </li>
