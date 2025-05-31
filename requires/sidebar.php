@@ -136,6 +136,36 @@
                   <span class="sub-item">View Suppliers</span>
                 </a>
               </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/purchase/add_purchase.php">
+                  <span class="sub-item">Purchase</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/purchase/view_purchases.php">
+                  <span class="sub-item">View Purchases</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/purchase/purchase_details.php">
+                  <span class="sub-item">Puchase Details</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/purchase/purchase_payments.php">
+                  <span class="sub-item">Payment</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/purchase/purchase_returns.php">
+                  <span class="sub-item">Puchase Returns</span>
+                </a>
+              </li>
+               <li>
+                <a href="<?= BASE_URL ?>modules/purchase/purchase_returns_items.php">
+                  <span class="sub-item">Return Items</span>
+                </a>
+              </li>
             </ul>
           </div>
         </li>
