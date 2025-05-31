@@ -16,7 +16,7 @@ $supplier_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $result = $mysqli->common_select('suppliers', '*', ['id' => $supplier_id]);
 if ($result['error'] || empty($result['data'])) {
     $_SESSION['error'] = 'Supplier not found';
-    header("Location: view_supplier.php");
+    header("Location: view_suppliers.php");
     exit();
 }
 $supplier = (array)$result['data'][0];
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $mysqli->common_update('suppliers', $data, ['id' => $supplier_id]);
             if (!$result['error']) {
                 $_SESSION['success'] = 'Supplier updated successfully';
-                header("Location: view_supplier.php");
+                header("Location: view_suppliers.php");
                 exit();
             } else {
                 $error = 'Error updating supplier: ' . $result['error_msg'];

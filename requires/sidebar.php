@@ -90,11 +90,6 @@
                 </a>
               </li>
               <li>
-                <a href="<?= BASE_URL ?>modules/products/edit_product.php">
-                  <span class="sub-item">Edit Products</span>
-                </a>
-              </li>
-              <li>
                 <a href="<?= BASE_URL ?>modules/products/trash_product.php">
                   <span class="sub-item">Trash Products</span>
                 </a>
@@ -141,11 +136,6 @@
                   <span class="sub-item">View Suppliers</span>
                 </a>
               </li>
-              <li>
-                <a href="<?= BASE_URL ?>modules/suppliers/edit_supplier.php">
-                  <span class="sub-item">Manage Supplier</span>
-                </a>
-              </li>
             </ul>
           </div>
         </li>
@@ -165,11 +155,6 @@
               <li>
                 <a href="<?= BASE_URL ?>modules/customers/view_customers.php">
                   <span class="sub-item">View Customers</span>
-                </a>
-              </li>
-              <li>
-                <a href="<?= BASE_URL ?>modules/customers/edit_customer.php">
-                  <span class="sub-item">Manage Customers</span>
                 </a>
               </li>
             </ul>

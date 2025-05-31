@@ -67,6 +67,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <th>Company</th>
                                         <th>Phone</th>
                                         <th>Email</th>
+                                        <th>Address</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -83,6 +84,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td><?= htmlspecialchars($supplier->company_name) ?></td>
                                                 <td><?= htmlspecialchars($supplier->phone) ?></td>
                                                 <td><?= htmlspecialchars($supplier->email) ?></td>
+                                                <td><?= htmlspecialchars($supplier->address) ?></td>
                                                 <td>
                                                     <div class="btn-group">
                                                         <a href="edit_supplier.php?id=<?= $supplier->id ?>" 
