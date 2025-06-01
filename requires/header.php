@@ -43,7 +43,7 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/dark-mode.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
     <!-- SweetAlert CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   </head>
   <body>
   <div class="wrapper">     

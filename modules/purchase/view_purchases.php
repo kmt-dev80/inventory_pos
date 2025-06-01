@@ -26,16 +26,16 @@ if (isset($_GET['status']) && !empty($_GET['status'])) {
 }
 
 if (isset($_GET['from_date']) && !empty($_GET['from_date'])) {
-    $where['created_at >='] = $_GET['from_date'] . ' 00:00:00';
+    $where['purchase_date >='] = $_GET['from_date'];
 }
 
 if (isset($_GET['to_date']) && !empty($_GET['to_date'])) {
-    $where['created_at <='] = $_GET['to_date'] . ' 23:59:59';
+    $where['purchase_date <='] = $_GET['to_date'];
 }
 
 $where['is_deleted'] = 0;
 
-$purchases = $mysqli->common_select('purchase', '*', $where, 'created_at', 'desc');
+$purchases = $mysqli->common_select('purchase', '*', $where, 'purchase_date DESC, created_at DESC');
 $suppliers = $mysqli->common_select('suppliers', '*');
 
 require_once __DIR__ . '/../../requires/header.php';
@@ -63,7 +63,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <div class="card-body">
                         <form method="get" class="mb-4">
                             <div class="row">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <div class="form-group">
                                         <label>Search by Reference</label>
                                         <input type="text" class="form-control" name="search" value="<?= htmlspecialchars($search) ?>">
@@ -111,6 +111,12 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <button type="submit" class="btn btn-primary btn-block">Filter</button>
                                     </div>
                                 </div>
+                                <div class="col-md-1">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <a href="view_purchases.php" class="btn btn-secondary btn-block">Reset</a>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                         
@@ -118,13 +124,16 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <table id="purchaseTable" class="display table table-striped table-hover">
                                 <thead>
                                     <tr>
+                                        <th>Date</th>
                                         <th>Ref No</th>
                                         <th>Supplier</th>
-                                        <th>Date</th>
                                         <th>Items</th>
+                                        <th>Subtotal</th>
+                                        <th>Discount</th>
+                                        <th>VAT</th>
                                         <th>Total</th>
                                         <th>Status</th>
-                                        <th>Payment</th>
+                                        <th>Paid</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -133,14 +142,20 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <?php foreach ($purchases['data'] as $purchase): 
                                             $supplier = $mysqli->common_select('suppliers', '*', ['id' => $purchase->supplier_id]);
                                             $items = $mysqli->common_select('purchase_items', '*', ['purchase_id' => $purchase->id]);
-                                            $payments = $mysqli->common_select('purchase_payment', 'SUM(amount) as total_paid', ['purchase_id' => $purchase->id]);
+                                            $payments = $mysqli->common_select('purchase_payment', 'SUM(amount) as total_paid', [
+                                                'purchase_id' => $purchase->id,
+                                                'type' => 'payment'
+                                            ]);
                                             $totalPaid = $payments['data'][0]->total_paid ?? 0;
                                         ?>
                                             <tr>
+                                                <td><?= date('d M Y', strtotime($purchase->purchase_date)) ?></td>
                                                 <td><?= $purchase->reference_no ?></td>
                                                 <td><?= !$supplier['error'] && !empty($supplier['data']) ? $supplier['data'][0]->name : 'N/A' ?></td>
-                                                <td><?= date('d M Y', strtotime($purchase->created_at)) ?></td>
                                                 <td><?= !$items['error'] ? count($items['data']) : 0 ?></td>
+                                                <td><?= number_format($purchase->subtotal, 2) ?></td>
+                                                <td><?= number_format($purchase->discount_amount, 2) ?></td>
+                                                <td><?= number_format($purchase->vat_amount, 2) ?></td>
                                                 <td><?= number_format($purchase->total, 2) ?></td>
                                                 <td>
                                                     <span class="badge badge-<?= 
@@ -173,7 +188,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="8" class="text-center">No purchases found</td>
+                                            <td colspan="11" class="text-center">No purchases found</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -193,7 +208,12 @@ $(document).ready(function() {
         dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
              "<'row'<'col-sm-12'tr>>" +
              "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-        responsive: true
+        responsive: true,
+        order: [[0, 'desc']],
+        columnDefs: [
+            { targets: [4,5,6,7,9], className: 'text-right' },
+            { targets: [10], orderable: false, searchable: false }
+        ]
     });
     
     // Delete purchase with confirmation
