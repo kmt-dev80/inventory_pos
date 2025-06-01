@@ -54,7 +54,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <div class="card-header">
                         <div class="d-flex align-items-center">
                             <h4 class="card-title">Purchase List</h4>
-                            <a href="add_purchase.php" class="btn btn-primary btn-round ml-auto">
+                            <a href="add_purchase.php" class="btn btn-primary btn-round ms-auto">
                                 <i class="fa fa-plus"></i>
                                 Add Purchase
                             </a>
@@ -189,14 +189,21 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
-    $('#purchaseTable').DataTable();
+    $('#purchaseTable').DataTable({
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        responsive: true
+    });
     
-    // Delete purchase
-    $(document).on('click', '.delete-purchase', function() {
+    // Delete purchase with confirmation
+    $(document).on('click', '.delete-purchase', function(e) {
+        e.preventDefault();
         const purchaseId = $(this).data('id');
+        
         Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: 'Confirm Deletion',
+            text: "Are you sure you want to delete this purchase?",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
@@ -204,7 +211,27 @@ $(document).ready(function() {
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = 'delete_purchase.php?id=' + purchaseId;
+                $.ajax({
+                    url: 'delete_purchase.php',
+                    type: 'GET',
+                    data: { id: purchaseId },
+                    success: function(response) {
+                        Swal.fire(
+                            'Deleted!',
+                            'Purchase has been deleted.',
+                            'success'
+                        ).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function() {
+                        Swal.fire(
+                            'Error!',
+                            'Failed to delete purchase.',
+                            'error'
+                        );
+                    }
+                });
             }
         });
     });

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 28, 2025 at 03:55 PM
+-- Generation Time: Jun 01, 2025 at 04:23 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -43,7 +43,8 @@ CREATE TABLE `brand` (
 
 INSERT INTO `brand` (`id`, `brand_name`, `details`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
 (1, 'Samsung', 'This is Brand', 0, NULL, '2025-05-28 11:57:39', '2025-05-28 12:22:33'),
-(2, 'Oneplus', '', 0, NULL, '2025-05-28 12:08:19', '2025-05-28 12:08:19');
+(2, 'Oneplus', '', 0, NULL, '2025-05-28 12:08:19', '2025-05-28 12:08:19'),
+(3, 'realme', 'All products', 0, NULL, '2025-05-29 11:54:13', '2025-05-29 11:54:13');
 
 -- --------------------------------------------------------
 
@@ -91,23 +92,8 @@ CREATE TABLE `child_category` (
 
 INSERT INTO `child_category` (`id`, `sub_category_id`, `category_name`, `details`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Laptop', 'Only Laptop', 0, NULL, '2025-05-28 11:24:39', '2025-05-28 11:24:39'),
-(2, 1, 'Pc', 'Only Pc', 0, NULL, '2025-05-28 11:25:00', '2025-05-28 11:25:00'),
+(2, 1, 'Pc', 'Only Pc', 1, '2025-05-28 16:04:41', '2025-05-28 11:25:00', '2025-05-28 16:04:41'),
 (3, 2, 'Android', 'Only Android', 0, NULL, '2025-05-28 11:26:21', '2025-05-28 11:26:21');
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `current_stock`
--- (See below for the actual view)
---
-CREATE TABLE `current_stock` (
-`product_id` int(11)
-,`product_name` varchar(100)
-,`barcode` varchar(50)
-,`current_quantity` decimal(33,0)
-,`price` decimal(10,2)
-,`sell_price` decimal(10,2)
-);
 
 -- --------------------------------------------------------
 
@@ -168,20 +154,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `barcode`, `category_id`, `sub_category_id`, `child_category_id`, `brand_id`, `price`, `sell_price`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 'Oneplus', '56663224244', 1, 2, 3, 2, 45000.00, 50000.00, 0, NULL, '2025-05-28 13:39:48', '2025-05-28 13:47:39');
-
---
--- Triggers `products`
---
-DELIMITER $$
-CREATE TRIGGER `before_product_price_update` BEFORE UPDATE ON `products` FOR EACH ROW BEGIN
-        IF NEW.sell_price < NEW.price THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Sell price cannot be lower than purchase price';
-        END IF;
-    END
-$$
-DELIMITER ;
+(1, 'Oneplus 12', '56663224244', 1, 2, 3, 2, 45000.00, 50000.00, 0, NULL, '2025-05-28 13:39:48', '2025-05-31 16:11:06'),
+(2, 'Oneplus 13', '45334662633', 1, 2, 3, 2, 18000.00, 20000.00, 0, NULL, '2025-05-31 16:20:16', '2025-05-31 16:20:16');
 
 -- --------------------------------------------------------
 
@@ -202,8 +176,16 @@ CREATE TABLE `purchase` (
   `is_deleted` tinyint(1) DEFAULT 0,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `payment_status` enum('pending','partial','paid') DEFAULT 'paid'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `purchase`
+--
+
+INSERT INTO `purchase` (`id`, `supplier_id`, `reference_no`, `payment_method`, `subtotal`, `discount`, `vat`, `total`, `user_id`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`, `payment_status`) VALUES
+(5, 2, 'PUR683B4400123B9', 'credit', 1800000.00, 2.00, 10.00, 1764010.00, 1, 1, '2025-06-01 02:22:30', '2025-05-31 18:01:36', '2025-06-01 02:22:30', 'partial');
 
 -- --------------------------------------------------------
 
@@ -222,39 +204,11 @@ CREATE TABLE `purchase_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Triggers `purchase_items`
+-- Dumping data for table `purchase_items`
 --
-DELIMITER $$
-CREATE TRIGGER `after_purchase_item_change` AFTER INSERT ON `purchase_items` FOR EACH ROW BEGIN
-        DECLARE v_subtotal DECIMAL(10,2);
-        DECLARE v_total DECIMAL(10,2);
-        
-        SELECT SUM(total_price), SUM(total_price) + COALESCE(MAX(vat), 0)
-        INTO v_subtotal, v_total
-        FROM purchase_items
-        WHERE purchase_id = NEW.purchase_id;
-        
-        UPDATE purchase
-        SET subtotal = v_subtotal,
-            total = v_total,
-            updated_at = NOW()
-        WHERE id = NEW.purchase_id;
-    END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_purchase_item_insert` AFTER INSERT ON `purchase_items` FOR EACH ROW BEGIN
-        INSERT INTO stock (product_id, user_id, change_type, qty, price, purchase_id, created_at)
-        VALUES (NEW.product_id, (SELECT user_id FROM purchase WHERE id = NEW.purchase_id), 
-               'purchase', NEW.quantity, NEW.unit_price, NEW.purchase_id, NOW());
-        
-        UPDATE products 
-        SET price = NEW.unit_price, 
-            updated_at = NOW()
-        WHERE id = NEW.product_id AND (price <> NEW.unit_price OR price IS NULL);
-    END
-$$
-DELIMITER ;
+
+INSERT INTO `purchase_items` (`id`, `purchase_id`, `product_id`, `quantity`, `unit_price`, `created_at`) VALUES
+(7, 5, 2, 100, 18000.00, '2025-05-31 18:01:36');
 
 -- --------------------------------------------------------
 
@@ -273,6 +227,15 @@ CREATE TABLE `purchase_payment` (
   `description` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `purchase_payment`
+--
+
+INSERT INTO `purchase_payment` (`id`, `supplier_id`, `purchase_id`, `purchase_return_id`, `type`, `amount`, `payment_method`, `description`, `created_at`) VALUES
+(1, 1, NULL, NULL, 'payment', 300000.00, 'bank_transfer', 'Payment for purchase #PUR683B3D9E80AD2', '2025-05-31 17:35:42'),
+(2, 2, 5, NULL, 'payment', 100000.00, 'cash', 'Payment for purchase #PUR683B4400123B9', '2025-05-31 18:05:16'),
+(3, 2, 5, 1, 'return', 18000.00, 'cash', 'Refund for return #1', '2025-06-01 01:34:31');
 
 -- --------------------------------------------------------
 
@@ -294,6 +257,13 @@ CREATE TABLE `purchase_returns` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `purchase_returns`
+--
+
+INSERT INTO `purchase_returns` (`id`, `purchase_id`, `return_reason`, `return_note`, `refund_amount`, `refund_method`, `user_id`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
+(1, 5, 'defective', 'Diisplay Problem', 18000.00, 'cash', 1, 0, NULL, '2025-06-01 01:34:31', '2025-06-01 01:34:31');
+
 -- --------------------------------------------------------
 
 --
@@ -309,6 +279,13 @@ CREATE TABLE `purchase_return_items` (
   `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `purchase_return_items`
+--
+
+INSERT INTO `purchase_return_items` (`id`, `purchase_return_id`, `product_id`, `quantity`, `unit_price`, `created_at`) VALUES
+(1, 1, 2, 1, 18000.00, '2025-06-01 01:34:31');
 
 -- --------------------------------------------------------
 
@@ -388,34 +365,6 @@ CREATE TABLE `sales_return_items` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Triggers `sales_return_items`
---
-DELIMITER $$
-CREATE TRIGGER `after_sales_return_item_insert` AFTER INSERT ON `sales_return_items` FOR EACH ROW BEGIN
-        INSERT INTO stock (product_id, user_id, change_type, qty, price, sales_return_id, created_at)
-        VALUES (NEW.product_id, (SELECT user_id FROM sales_returns WHERE id = NEW.sales_return_id), 
-               'sales_return', NEW.quantity, NEW.unit_price, NEW.sales_return_id, NOW());
-    END
-$$
-DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `sales_summary`
--- (See below for the actual view)
---
-CREATE TABLE `sales_summary` (
-`sale_date` date
-,`total_sales` bigint(21)
-,`total_amount` decimal(32,2)
-,`total_discount` decimal(27,2)
-,`total_vat` decimal(32,2)
-,`total_returns` bigint(21)
-,`total_refunds` decimal(32,2)
-);
-
 -- --------------------------------------------------------
 
 --
@@ -431,40 +380,6 @@ CREATE TABLE `sale_items` (
   `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Triggers `sale_items`
---
-DELIMITER $$
-CREATE TRIGGER `after_sale_item_change` AFTER INSERT ON `sale_items` FOR EACH ROW BEGIN
-        DECLARE v_subtotal DECIMAL(10,2);
-        DECLARE v_total DECIMAL(10,2);
-        DECLARE v_discount DECIMAL(5,2);
-        
-        SELECT discount INTO v_discount FROM sales WHERE id = NEW.sale_id;
-        
-        SELECT SUM(total_price), 
-               SUM(total_price) - (SUM(total_price) * COALESCE(v_discount, 0)/100) + COALESCE(MAX(vat), 0)
-        INTO v_subtotal, v_total
-        FROM sale_items
-        WHERE sale_id = NEW.sale_id;
-        
-        UPDATE sales
-        SET subtotal = v_subtotal,
-            total = v_total,
-            updated_at = NOW()
-        WHERE id = NEW.sale_id;
-    END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_sale_item_insert` AFTER INSERT ON `sale_items` FOR EACH ROW BEGIN
-        INSERT INTO stock (product_id, user_id, change_type, qty, price, sale_id, created_at)
-        VALUES (NEW.product_id, (SELECT user_id FROM sales WHERE id = NEW.sale_id), 
-               'sale', NEW.quantity, NEW.unit_price, NEW.sale_id, NOW());
-    END
-$$
-DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -494,7 +409,26 @@ INSERT INTO `security_logs` (`id`, `user_id`, `ip_address`, `action`, `details`,
 (5, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 23:27:49'),
 (6, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 23:53:29'),
 (7, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 11:05:03'),
-(8, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 12:28:38');
+(8, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 12:28:38'),
+(9, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 14:10:07'),
+(10, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 14:56:52'),
+(11, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 15:54:02'),
+(12, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 16:15:56'),
+(13, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 17:06:10'),
+(14, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 00:33:06'),
+(15, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 11:23:00'),
+(16, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 12:12:34'),
+(17, 6, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 12:44:57'),
+(18, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 12:46:13'),
+(19, 6, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 13:29:01'),
+(20, 6, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 13:33:57'),
+(21, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 13:34:06'),
+(22, 1, '127.0.0.1', 'login', 'Failed login attempt', 'failure', '2025-05-30 12:08:22'),
+(23, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-30 12:08:30'),
+(24, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-30 14:00:30'),
+(25, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-31 01:53:30'),
+(26, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-31 10:33:58'),
+(27, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-01 01:27:47');
 
 -- --------------------------------------------------------
 
@@ -517,30 +451,6 @@ CREATE TABLE `stock` (
   `note` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Triggers `stock`
---
-DELIMITER $$
-CREATE TRIGGER `after_stock_update` AFTER INSERT ON `stock` FOR EACH ROW BEGIN
-        DECLARE v_current_qty INT;
-        DECLARE v_product_name VARCHAR(100);
-        DECLARE v_threshold INT DEFAULT 5;
-        
-        SELECT current_quantity INTO v_current_qty
-        FROM current_stock
-        WHERE product_id = NEW.product_id;
-        
-        SELECT name INTO v_product_name FROM products WHERE id = NEW.product_id;
-        
-        IF v_current_qty <= v_threshold THEN
-            INSERT INTO system_logs (user_id, ip_address, category, message)
-            VALUES (NEW.user_id, NULL, 'stock', 
-                    CONCAT('Low stock alert: ', v_product_name, ' (', v_current_qty, ' remaining)'));
-        END IF;
-    END
-$$
-DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -584,6 +494,14 @@ CREATE TABLE `suppliers` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `suppliers`
+--
+
+INSERT INTO `suppliers` (`id`, `name`, `phone`, `email`, `address`, `company_name`, `created_at`, `updated_at`) VALUES
+(1, 'Md Takiul Hasan', '01319028680', 'admin2@example.com', 'Baherdderhat', 'RFL', '2025-05-29 11:25:21', '2025-05-29 11:25:21'),
+(2, 'Imtiaz', '01319028682', 'admwn3@example.com', 'Khashkhama', 'Well Food', '2025-05-31 16:08:56', '2025-05-31 16:08:56');
+
 -- --------------------------------------------------------
 
 --
@@ -611,7 +529,11 @@ INSERT INTO `system_logs` (`id`, `user_id`, `ip_address`, `user_agent`, `categor
 (4, 1, '127.0.0.1', NULL, 'user', 'Created new user: kmt_hasan (cashier)', '2025-05-28 00:07:25'),
 (5, 1, '127.0.0.1', NULL, 'user', 'Updated user #1 (admin123)', '2025-05-28 00:28:45'),
 (6, 1, '127.0.0.1', NULL, 'user', 'Created new user: Taki2 (manager)', '2025-05-28 01:54:39'),
-(7, 1, '127.0.0.1', NULL, 'user', 'Updated user #5 (Taki2)', '2025-05-28 01:55:01');
+(7, 1, '127.0.0.1', NULL, 'user', 'Updated user #5 (Taki2)', '2025-05-28 01:55:01'),
+(8, 1, '127.0.0.1', NULL, 'user', 'Updated user #1 (admin123)', '2025-05-28 14:53:38'),
+(9, 1, '127.0.0.1', NULL, 'user', 'Created new user: admin456 (cashier)', '2025-05-29 12:43:08'),
+(10, 1, '127.0.0.1', NULL, 'user', 'Updated user #1 (admin123)', '2025-05-29 13:05:14'),
+(11, 1, '127.0.0.1', NULL, 'user', 'Updated user #6 (admin456)', '2025-05-29 13:28:30');
 
 -- --------------------------------------------------------
 
@@ -648,9 +570,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `profile_pic`, `username`, `password`, `full_name`, `email`, `role`, `is_active`, `last_login`, `last_login_ip`, `login_attempts`, `locked_until`, `reset_token`, `reset_token_expires`, `email_verified`, `verification_token`, `password_changed_at`, `created_at`, `updated_at`, `is_deleted`, `deleted_at`) VALUES
-(1, 'uploads/profile_pics/user_1_1748392125.png', 'admin123', '$2y$10$ZNddYegddabcHJdIW0IqaevzNfqgOn6PJ2ebgwIzGcOgZnGtHzii2', 'System Administrator', 'mdtakiulhasan@gmail.com', 'admin', 1, '2025-05-28 18:28:38', '127.0.0.1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-27 17:05:05', '2025-05-28 12:28:38', 0, NULL),
+(1, NULL, 'admin123', '$2y$10$ZNddYegddabcHJdIW0IqaevzNfqgOn6PJ2ebgwIzGcOgZnGtHzii2', 'System Administrator', 'mdtakiulhasan@gmail.com', 'admin', 1, '2025-06-01 07:27:47', '127.0.0.1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-27 17:05:05', '2025-06-01 01:27:47', 0, NULL),
 (4, 'uploads/profile_pics/profile_683653bda3bc0.png', 'kmt_hasan', '$2y$10$kj4vs1ugvQKcwbEHVHK3ben.rt4yH6EhLEHbinxK4b1.BHlmm/tiW', 'kmt Hasane', 'kmth444asan@gmail.com', 'cashier', 1, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-28 00:07:25', '2025-05-28 00:27:19', 1, '2025-05-28 00:27:19'),
-(5, NULL, 'Taki2', '$2y$10$a7m67lFyf4g7/9nhwbWcFu/LFisS0fnnu1yDAOxsC.zMepbjE1gHG', 'kmt Hasane', 'admeein@example.com', 'inventory', 1, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-28 01:54:38', '2025-05-28 01:55:59', 1, '2025-05-28 01:55:59');
+(6, 'uploads/profile_pics/user_6_1748525310.png', 'admin456', '$2y$10$YNw4l.1We2B5I4AADsMjkOgEPGSibbigkWzIBECbMowlQs6UqOSfe', 'KMT HASAN', 'admeein@example.com', 'cashier', 1, '2025-05-29 19:33:57', '127.0.0.1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-29 12:43:08', '2025-05-29 13:33:57', 0, NULL);
 
 --
 -- Triggers `users`
@@ -665,24 +587,6 @@ CREATE TRIGGER `after_user_login_attempt` AFTER UPDATE ON `users` FOR EACH ROW B
     END
 $$
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `current_stock`
---
-DROP TABLE IF EXISTS `current_stock`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `current_stock`  AS SELECT `p`.`id` AS `product_id`, `p`.`name` AS `product_name`, `p`.`barcode` AS `barcode`, coalesce(sum(case when `s`.`change_type` = 'purchase' then `s`.`qty` when `s`.`change_type` = 'sales_return' then `s`.`qty` when `s`.`change_type` = 'purchase_return' then -`s`.`qty` when `s`.`change_type` = 'sale' then -`s`.`qty` when `s`.`change_type` = 'adjustment' then case when (select `inventory_adjustments`.`adjustment_type` from `inventory_adjustments` where `inventory_adjustments`.`id` = `s`.`adjustment_id`) = 'add' then `s`.`qty` else -`s`.`qty` end end),0) AS `current_quantity`, `p`.`price` AS `price`, `p`.`sell_price` AS `sell_price` FROM (`products` `p` left join `stock` `s` on(`p`.`id` = `s`.`product_id`)) WHERE `p`.`is_deleted` = 0 GROUP BY `p`.`id`, `p`.`name`, `p`.`barcode`, `p`.`price`, `p`.`sell_price` ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `sales_summary`
---
-DROP TABLE IF EXISTS `sales_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `sales_summary`  AS SELECT cast(`s`.`created_at` as date) AS `sale_date`, count(0) AS `total_sales`, sum(`s`.`total`) AS `total_amount`, sum(`s`.`discount`) AS `total_discount`, sum(`s`.`vat`) AS `total_vat`, (select count(0) from `sales_returns` `sr` where cast(`sr`.`created_at` as date) = cast(`s`.`created_at` as date)) AS `total_returns`, (select coalesce(sum(`sr`.`refund_amount`),0) from `sales_returns` `sr` where cast(`sr`.`created_at` as date) = cast(`s`.`created_at` as date)) AS `total_refunds` FROM `sales` AS `s` WHERE `s`.`is_deleted` = 0 GROUP BY cast(`s`.`created_at` as date) ;
 
 --
 -- Indexes for dumped tables
@@ -874,7 +778,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `brand`
 --
 ALTER TABLE `brand`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -904,37 +808,37 @@ ALTER TABLE `inventory_adjustments`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `purchase`
 --
 ALTER TABLE `purchase`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `purchase_items`
 --
 ALTER TABLE `purchase_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `purchase_payment`
 --
 ALTER TABLE `purchase_payment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `purchase_returns`
 --
 ALTER TABLE `purchase_returns`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `purchase_return_items`
 --
 ALTER TABLE `purchase_return_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `sales`
@@ -970,13 +874,13 @@ ALTER TABLE `sale_items`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `stock`
 --
 ALTER TABLE `stock`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `sub_category`
@@ -988,19 +892,19 @@ ALTER TABLE `sub_category`
 -- AUTO_INCREMENT for table `suppliers`
 --
 ALTER TABLE `suppliers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Constraints for dumped tables

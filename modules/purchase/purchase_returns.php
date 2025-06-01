@@ -92,7 +92,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 <?= isset($purchase) ? 'Create Return for Purchase #' . $purchase->reference_no : 'Purchase Returns' ?>
                             </h4>
                             <?php if (!isset($purchase)): ?>
-                                <a href="view_purchases.php" class="btn btn-primary btn-round ml-auto">
+                                <a href="view_purchases.php" class="btn btn-primary btn-round ms-auto">
                                     <i class="fas fa-arrow-left"></i> Back to Purchases
                                 </a>
                             <?php endif; ?>
@@ -292,6 +292,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 
+<?php include __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
     <?php if (isset($purchase)): ?>
@@ -317,5 +318,3 @@ $(document).ready(function() {
     <?php endif; ?>
 });
 </script>
-
-<?php include __DIR__ . '/../../requires/footer.php'; ?>

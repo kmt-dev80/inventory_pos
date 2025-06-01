@@ -246,8 +246,10 @@
 <!-- Bootstrap Notify -->
 <script src="<?= BASE_URL ?>assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
 
-<!-- Sweet Alert -->
+<!-- Sweet Alert
 <script src="<?= BASE_URL ?>assets/js/plugin/sweetalert/sweetalert.min.js"></script>
+ SweetAlert JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Kaiadmin JS -->
 <script src="<?= BASE_URL ?>assets/js/kaiadmin.min.js"></script>

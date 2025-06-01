@@ -43,7 +43,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <div class="card-header">
                         <div class="d-flex align-items-center">
                             <h4 class="card-title">Return #RTN-<?= $return->id ?></h4>
-                            <div class="ml-auto">
+                            <div class="ms-auto">
                                 <a href="purchase_returns.php" class="btn btn-primary btn-round">
                                     <i class="fas fa-arrow-left"></i> Back to Returns
                                 </a>
