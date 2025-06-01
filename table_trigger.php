@@ -175,6 +175,7 @@ $createTables = [
         id INT PRIMARY KEY AUTO_INCREMENT,
         supplier_id INT NULL,
         reference_no VARCHAR(50) NULL,
+        purchase_date DATE NOT NULL,
         payment_method VARCHAR(20) DEFAULT 'cash',
         payment_status ENUM('pending', 'partial', 'paid') DEFAULT 'pending',
         subtotal DECIMAL(10,2) DEFAULT 0,
@@ -220,7 +221,7 @@ $createTables = [
         product_id INT NOT NULL,
         quantity INT NOT NULL,
         unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+        total_price DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_id) REFERENCES purchase(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
@@ -233,7 +234,7 @@ $createTables = [
         product_id INT NOT NULL,
         quantity INT NOT NULL,
         unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+        total_price DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
@@ -301,7 +302,7 @@ $createTables = [
         product_id INT NOT NULL,
         quantity INT NOT NULL,
         unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+        total_price DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sales_return_id) REFERENCES sales_returns(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
@@ -314,7 +315,7 @@ $createTables = [
         product_id INT NOT NULL,
         quantity INT NOT NULL,
         unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+        total_price DECIMAL(10,2) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (purchase_return_id) REFERENCES purchase_returns(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
@@ -393,190 +394,6 @@ $createTables = [
 foreach ($createTables as $query) {
     if (!mysqli_query($connection, $query)) {
         die("Error creating table: " . mysqli_error($connection));
-    }
-}
-
-// Create views
-$views = [
-    "CREATE OR REPLACE VIEW current_stock AS
-    SELECT 
-      p.id AS product_id,
-      p.name AS product_name,
-      p.barcode,
-      COALESCE(SUM(CASE 
-        WHEN s.change_type = 'purchase' THEN s.qty
-        WHEN s.change_type = 'sales_return' THEN s.qty
-        WHEN s.change_type = 'purchase_return' THEN -s.qty
-        WHEN s.change_type = 'sale' THEN -s.qty
-        WHEN s.change_type = 'adjustment' THEN 
-          CASE 
-            WHEN (SELECT adjustment_type FROM inventory_adjustments WHERE id = s.adjustment_id) = 'add' THEN s.qty
-            ELSE -s.qty
-          END
-      END), 0) AS current_quantity,
-      p.price,
-      p.sell_price
-    FROM products p
-    LEFT JOIN stock s ON p.id = s.product_id
-    WHERE p.is_deleted = 0
-    GROUP BY p.id, p.name, p.barcode, p.price, p.sell_price",
-
-    "CREATE OR REPLACE VIEW sales_summary AS
-    SELECT 
-      DATE(s.created_at) AS sale_date,
-      COUNT(*) AS total_sales,
-      SUM(s.total) AS total_amount,
-      SUM(s.discount) AS total_discount,
-      SUM(s.vat) AS total_vat,
-      (SELECT COUNT(*) FROM sales_returns sr WHERE DATE(sr.created_at) = DATE(s.created_at)) AS total_returns,
-      (SELECT COALESCE(SUM(sr.refund_amount), 0) FROM sales_returns sr WHERE DATE(sr.created_at) = DATE(s.created_at)) AS total_refunds
-    FROM sales s
-    WHERE s.is_deleted = 0
-    GROUP BY DATE(s.created_at)"
-];
-
-foreach ($views as $query) {
-    if (!mysqli_query($connection, $query)) {
-        die("Error creating view: " . mysqli_error($connection));
-    }
-}
-
-// Create triggers
-$triggers = [
-    // Stock Update Triggers
-    "DROP TRIGGER IF EXISTS after_purchase_item_insert",
-    "CREATE TRIGGER after_purchase_item_insert
-    AFTER INSERT ON purchase_items
-    FOR EACH ROW
-    BEGIN
-        INSERT INTO stock (product_id, user_id, change_type, qty, price, purchase_id, created_at)
-        VALUES (NEW.product_id, (SELECT user_id FROM purchase WHERE id = NEW.purchase_id), 
-               'purchase', NEW.quantity, NEW.unit_price, NEW.purchase_id, NOW());
-        
-        UPDATE products 
-        SET price = NEW.unit_price, 
-            updated_at = NOW()
-        WHERE id = NEW.product_id AND (price <> NEW.unit_price OR price IS NULL);
-    END",
-
-    "DROP TRIGGER IF EXISTS after_sale_item_insert",
-    "CREATE TRIGGER after_sale_item_insert
-    AFTER INSERT ON sale_items
-    FOR EACH ROW
-    BEGIN
-        INSERT INTO stock (product_id, user_id, change_type, qty, price, sale_id, created_at)
-        VALUES (NEW.product_id, (SELECT user_id FROM sales WHERE id = NEW.sale_id), 
-               'sale', NEW.quantity, NEW.unit_price, NEW.sale_id, NOW());
-    END",
-
-    // Automatic Total Calculation Triggers
-    "DROP TRIGGER IF EXISTS after_purchase_item_change",
-    "CREATE TRIGGER after_purchase_item_change
-    AFTER INSERT ON purchase_items
-    FOR EACH ROW
-    BEGIN
-        DECLARE v_subtotal DECIMAL(10,2);
-        DECLARE v_total DECIMAL(10,2);
-        
-        SELECT SUM(total_price), SUM(total_price) + COALESCE(MAX(vat), 0)
-        INTO v_subtotal, v_total
-        FROM purchase_items
-        WHERE purchase_id = NEW.purchase_id;
-        
-        UPDATE purchase
-        SET subtotal = v_subtotal,
-            total = v_total,
-            updated_at = NOW()
-        WHERE id = NEW.purchase_id;
-    END",
-
-    "DROP TRIGGER IF EXISTS after_sale_item_change",
-    "CREATE TRIGGER after_sale_item_change
-    AFTER INSERT ON sale_items
-    FOR EACH ROW
-    BEGIN
-        DECLARE v_subtotal DECIMAL(10,2);
-        DECLARE v_total DECIMAL(10,2);
-        DECLARE v_discount DECIMAL(5,2);
-        
-        SELECT discount INTO v_discount FROM sales WHERE id = NEW.sale_id;
-        
-        SELECT SUM(total_price), 
-               SUM(total_price) - (SUM(total_price) * COALESCE(v_discount, 0)/100) + COALESCE(MAX(vat), 0)
-        INTO v_subtotal, v_total
-        FROM sale_items
-        WHERE sale_id = NEW.sale_id;
-        
-        UPDATE sales
-        SET subtotal = v_subtotal,
-            total = v_total,
-            updated_at = NOW()
-        WHERE id = NEW.sale_id;
-    END",
-
-    // Inventory Alert Trigger
-    "DROP TRIGGER IF EXISTS after_stock_update",
-    "CREATE TRIGGER after_stock_update
-    AFTER INSERT ON stock
-    FOR EACH ROW
-    BEGIN
-        DECLARE v_current_qty INT;
-        DECLARE v_product_name VARCHAR(100);
-        DECLARE v_threshold INT DEFAULT 5;
-        
-        SELECT current_quantity INTO v_current_qty
-        FROM current_stock
-        WHERE product_id = NEW.product_id;
-        
-        SELECT name INTO v_product_name FROM products WHERE id = NEW.product_id;
-        
-        IF v_current_qty <= v_threshold THEN
-            INSERT INTO system_logs (user_id, ip_address, category, message)
-            VALUES (NEW.user_id, NULL, 'stock', 
-                    CONCAT('Low stock alert: ', v_product_name, ' (', v_current_qty, ' remaining)'));
-        END IF;
-    END",
-
-    // Sales Return Trigger
-    "DROP TRIGGER IF EXISTS after_sales_return_item_insert",
-    "CREATE TRIGGER after_sales_return_item_insert
-    AFTER INSERT ON sales_return_items
-    FOR EACH ROW
-    BEGIN
-        INSERT INTO stock (product_id, user_id, change_type, qty, price, sales_return_id, created_at)
-        VALUES (NEW.product_id, (SELECT user_id FROM sales_returns WHERE id = NEW.sales_return_id), 
-               'sales_return', NEW.quantity, NEW.unit_price, NEW.sales_return_id, NOW());
-    END",
-
-    // Price Validation Trigger
-    "DROP TRIGGER IF EXISTS before_product_price_update",
-    "CREATE TRIGGER before_product_price_update
-    BEFORE UPDATE ON products
-    FOR EACH ROW
-    BEGIN
-        IF NEW.sell_price < NEW.price THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Sell price cannot be lower than purchase price';
-        END IF;
-    END",
-
-    // User Security Trigger
-    "DROP TRIGGER IF EXISTS after_user_login_attempt",
-    "CREATE TRIGGER after_user_login_attempt
-    AFTER UPDATE ON users
-    FOR EACH ROW
-    BEGIN
-        IF OLD.login_attempts <> NEW.login_attempts AND NEW.login_attempts >= 5 THEN
-            INSERT INTO security_logs (user_id, ip_address, action, details, status)
-            VALUES (NEW.id, NEW.last_login_ip, 'account_lock', 
-                    'Account locked due to too many failed attempts', 'failure');
-        END IF;
-    END"
-];
-
-foreach ($triggers as $query) {
-    if (!mysqli_query($connection, $query)) {
-        die("Error creating trigger: " . mysqli_error($connection));
     }
 }
 

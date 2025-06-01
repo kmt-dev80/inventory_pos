@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 01, 2025 at 04:23 AM
+-- Generation Time: Jun 01, 2025 at 08:58 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -42,9 +42,7 @@ CREATE TABLE `brand` (
 --
 
 INSERT INTO `brand` (`id`, `brand_name`, `details`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 'Samsung', 'This is Brand', 0, NULL, '2025-05-28 11:57:39', '2025-05-28 12:22:33'),
-(2, 'Oneplus', '', 0, NULL, '2025-05-28 12:08:19', '2025-05-28 12:08:19'),
-(3, 'realme', 'All products', 0, NULL, '2025-05-29 11:54:13', '2025-05-29 11:54:13');
+(1, 'Samsung', '', 0, NULL, '2025-06-01 06:47:40', '2025-06-01 06:47:40');
 
 -- --------------------------------------------------------
 
@@ -67,7 +65,7 @@ CREATE TABLE `category` (
 --
 
 INSERT INTO `category` (`id`, `category`, `details`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 'Electronics', 'All Electronics', 0, NULL, '2025-05-28 11:22:23', '2025-05-28 11:22:23');
+(1, 'Electrinics', 'All Electrinics', 0, NULL, '2025-06-01 06:35:32', '2025-06-01 06:35:32');
 
 -- --------------------------------------------------------
 
@@ -91,9 +89,7 @@ CREATE TABLE `child_category` (
 --
 
 INSERT INTO `child_category` (`id`, `sub_category_id`, `category_name`, `details`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Laptop', 'Only Laptop', 0, NULL, '2025-05-28 11:24:39', '2025-05-28 11:24:39'),
-(2, 1, 'Pc', 'Only Pc', 1, '2025-05-28 16:04:41', '2025-05-28 11:25:00', '2025-05-28 16:04:41'),
-(3, 2, 'Android', 'Only Android', 0, NULL, '2025-05-28 11:26:21', '2025-05-28 11:26:21');
+(1, 1, 'Mini Laptop', '', 0, NULL, '2025-06-01 06:37:00', '2025-06-01 06:37:00');
 
 -- --------------------------------------------------------
 
@@ -154,8 +150,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `barcode`, `category_id`, `sub_category_id`, `child_category_id`, `brand_id`, `price`, `sell_price`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 'Oneplus 12', '56663224244', 1, 2, 3, 2, 45000.00, 50000.00, 0, NULL, '2025-05-28 13:39:48', '2025-05-31 16:11:06'),
-(2, 'Oneplus 13', '45334662633', 1, 2, 3, 2, 18000.00, 20000.00, 0, NULL, '2025-05-31 16:20:16', '2025-05-31 16:20:16');
+(1, 'ipad', '12345678910', 1, 1, 1, 1, 10000.00, 15000.00, 0, NULL, '2025-06-01 06:48:58', '2025-06-01 06:48:58');
 
 -- --------------------------------------------------------
 
@@ -167,7 +162,9 @@ CREATE TABLE `purchase` (
   `id` int(11) NOT NULL,
   `supplier_id` int(11) DEFAULT NULL,
   `reference_no` varchar(50) DEFAULT NULL,
+  `purchase_date` date NOT NULL,
   `payment_method` varchar(20) DEFAULT 'cash',
+  `payment_status` enum('pending','partial','paid') DEFAULT 'pending',
   `subtotal` decimal(10,2) DEFAULT 0.00,
   `discount` decimal(5,2) DEFAULT 0.00,
   `vat` decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -176,16 +173,8 @@ CREATE TABLE `purchase` (
   `is_deleted` tinyint(1) DEFAULT 0,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `payment_status` enum('pending','partial','paid') DEFAULT 'paid'
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `purchase`
---
-
-INSERT INTO `purchase` (`id`, `supplier_id`, `reference_no`, `payment_method`, `subtotal`, `discount`, `vat`, `total`, `user_id`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`, `payment_status`) VALUES
-(5, 2, 'PUR683B4400123B9', 'credit', 1800000.00, 2.00, 10.00, 1764010.00, 1, 1, '2025-06-01 02:22:30', '2025-05-31 18:01:36', '2025-06-01 02:22:30', 'partial');
 
 -- --------------------------------------------------------
 
@@ -199,16 +188,9 @@ CREATE TABLE `purchase_items` (
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED,
+  `total_price` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `purchase_items`
---
-
-INSERT INTO `purchase_items` (`id`, `purchase_id`, `product_id`, `quantity`, `unit_price`, `created_at`) VALUES
-(7, 5, 2, 100, 18000.00, '2025-05-31 18:01:36');
 
 -- --------------------------------------------------------
 
@@ -227,15 +209,6 @@ CREATE TABLE `purchase_payment` (
   `description` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `purchase_payment`
---
-
-INSERT INTO `purchase_payment` (`id`, `supplier_id`, `purchase_id`, `purchase_return_id`, `type`, `amount`, `payment_method`, `description`, `created_at`) VALUES
-(1, 1, NULL, NULL, 'payment', 300000.00, 'bank_transfer', 'Payment for purchase #PUR683B3D9E80AD2', '2025-05-31 17:35:42'),
-(2, 2, 5, NULL, 'payment', 100000.00, 'cash', 'Payment for purchase #PUR683B4400123B9', '2025-05-31 18:05:16'),
-(3, 2, 5, 1, 'return', 18000.00, 'cash', 'Refund for return #1', '2025-06-01 01:34:31');
 
 -- --------------------------------------------------------
 
@@ -257,13 +230,6 @@ CREATE TABLE `purchase_returns` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `purchase_returns`
---
-
-INSERT INTO `purchase_returns` (`id`, `purchase_id`, `return_reason`, `return_note`, `refund_amount`, `refund_method`, `user_id`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 5, 'defective', 'Diisplay Problem', 18000.00, 'cash', 1, 0, NULL, '2025-06-01 01:34:31', '2025-06-01 01:34:31');
-
 -- --------------------------------------------------------
 
 --
@@ -276,16 +242,9 @@ CREATE TABLE `purchase_return_items` (
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED,
+  `total_price` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `purchase_return_items`
---
-
-INSERT INTO `purchase_return_items` (`id`, `purchase_return_id`, `product_id`, `quantity`, `unit_price`, `created_at`) VALUES
-(1, 1, 2, 1, 18000.00, '2025-06-01 01:34:31');
 
 -- --------------------------------------------------------
 
@@ -361,7 +320,7 @@ CREATE TABLE `sales_return_items` (
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED,
+  `total_price` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -377,7 +336,7 @@ CREATE TABLE `sale_items` (
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) GENERATED ALWAYS AS (`quantity` * `unit_price`) STORED,
+  `total_price` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -402,33 +361,7 @@ CREATE TABLE `security_logs` (
 --
 
 INSERT INTO `security_logs` (`id`, `user_id`, `ip_address`, `action`, `details`, `status`, `created_at`) VALUES
-(1, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 17:06:51'),
-(2, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 17:07:15'),
-(3, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 17:36:35'),
-(4, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 23:22:10'),
-(5, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 23:27:49'),
-(6, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-27 23:53:29'),
-(7, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 11:05:03'),
-(8, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 12:28:38'),
-(9, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 14:10:07'),
-(10, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 14:56:52'),
-(11, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 15:54:02'),
-(12, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 16:15:56'),
-(13, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-28 17:06:10'),
-(14, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 00:33:06'),
-(15, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 11:23:00'),
-(16, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 12:12:34'),
-(17, 6, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 12:44:57'),
-(18, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 12:46:13'),
-(19, 6, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 13:29:01'),
-(20, 6, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 13:33:57'),
-(21, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-29 13:34:06'),
-(22, 1, '127.0.0.1', 'login', 'Failed login attempt', 'failure', '2025-05-30 12:08:22'),
-(23, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-30 12:08:30'),
-(24, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-30 14:00:30'),
-(25, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-31 01:53:30'),
-(26, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-05-31 10:33:58'),
-(27, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-01 01:27:47');
+(1, 1, '::1', 'login', 'Successful login', 'success', '2025-06-01 06:34:55');
 
 -- --------------------------------------------------------
 
@@ -474,8 +407,7 @@ CREATE TABLE `sub_category` (
 --
 
 INSERT INTO `sub_category` (`id`, `category_id`, `category_name`, `details`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Computer', 'All Desktop', 0, NULL, '2025-05-28 11:23:28', '2025-05-28 11:23:28'),
-(2, 1, 'Smartphone', 'All Smartphone', 0, NULL, '2025-05-28 11:25:34', '2025-05-28 11:25:34');
+(1, 1, 'Laptop', 'ALL Laptop', 0, NULL, '2025-06-01 06:35:54', '2025-06-01 06:35:54');
 
 -- --------------------------------------------------------
 
@@ -499,8 +431,7 @@ CREATE TABLE `suppliers` (
 --
 
 INSERT INTO `suppliers` (`id`, `name`, `phone`, `email`, `address`, `company_name`, `created_at`, `updated_at`) VALUES
-(1, 'Md Takiul Hasan', '01319028680', 'admin2@example.com', 'Baherdderhat', 'RFL', '2025-05-29 11:25:21', '2025-05-29 11:25:21'),
-(2, 'Imtiaz', '01319028682', 'admwn3@example.com', 'Khashkhama', 'Well Food', '2025-05-31 16:08:56', '2025-05-31 16:08:56');
+(1, 'Takiul Hasan', '01319028680', 'mdtakiulhasan@gmail.com', 'chiattagong', 'Rfl', '2025-06-01 06:49:33', '2025-06-01 06:49:33');
 
 -- --------------------------------------------------------
 
@@ -523,17 +454,7 @@ CREATE TABLE `system_logs` (
 --
 
 INSERT INTO `system_logs` (`id`, `user_id`, `ip_address`, `user_agent`, `category`, `message`, `created_at`) VALUES
-(1, NULL, '127.0.0.1', NULL, 'user', 'Created new user: admin123 (admin)', '2025-05-27 17:05:06'),
-(2, 1, '127.0.0.1', NULL, 'user', 'Created new user: oneplus (inventory)', '2025-05-27 17:08:17'),
-(3, 1, '127.0.0.1', NULL, 'user', 'Created new user: hasan (manager)', '2025-05-27 23:29:02'),
-(4, 1, '127.0.0.1', NULL, 'user', 'Created new user: kmt_hasan (cashier)', '2025-05-28 00:07:25'),
-(5, 1, '127.0.0.1', NULL, 'user', 'Updated user #1 (admin123)', '2025-05-28 00:28:45'),
-(6, 1, '127.0.0.1', NULL, 'user', 'Created new user: Taki2 (manager)', '2025-05-28 01:54:39'),
-(7, 1, '127.0.0.1', NULL, 'user', 'Updated user #5 (Taki2)', '2025-05-28 01:55:01'),
-(8, 1, '127.0.0.1', NULL, 'user', 'Updated user #1 (admin123)', '2025-05-28 14:53:38'),
-(9, 1, '127.0.0.1', NULL, 'user', 'Created new user: admin456 (cashier)', '2025-05-29 12:43:08'),
-(10, 1, '127.0.0.1', NULL, 'user', 'Updated user #1 (admin123)', '2025-05-29 13:05:14'),
-(11, 1, '127.0.0.1', NULL, 'user', 'Updated user #6 (admin456)', '2025-05-29 13:28:30');
+(1, 1, '::1', NULL, 'user', 'Created new user: admin123 (admin)', '2025-06-01 06:34:18');
 
 -- --------------------------------------------------------
 
@@ -570,23 +491,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `profile_pic`, `username`, `password`, `full_name`, `email`, `role`, `is_active`, `last_login`, `last_login_ip`, `login_attempts`, `locked_until`, `reset_token`, `reset_token_expires`, `email_verified`, `verification_token`, `password_changed_at`, `created_at`, `updated_at`, `is_deleted`, `deleted_at`) VALUES
-(1, NULL, 'admin123', '$2y$10$ZNddYegddabcHJdIW0IqaevzNfqgOn6PJ2ebgwIzGcOgZnGtHzii2', 'System Administrator', 'mdtakiulhasan@gmail.com', 'admin', 1, '2025-06-01 07:27:47', '127.0.0.1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-27 17:05:05', '2025-06-01 01:27:47', 0, NULL),
-(4, 'uploads/profile_pics/profile_683653bda3bc0.png', 'kmt_hasan', '$2y$10$kj4vs1ugvQKcwbEHVHK3ben.rt4yH6EhLEHbinxK4b1.BHlmm/tiW', 'kmt Hasane', 'kmth444asan@gmail.com', 'cashier', 1, NULL, NULL, 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-28 00:07:25', '2025-05-28 00:27:19', 1, '2025-05-28 00:27:19'),
-(6, 'uploads/profile_pics/user_6_1748525310.png', 'admin456', '$2y$10$YNw4l.1We2B5I4AADsMjkOgEPGSibbigkWzIBECbMowlQs6UqOSfe', 'KMT HASAN', 'admeein@example.com', 'cashier', 1, '2025-05-29 19:33:57', '127.0.0.1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-05-29 12:43:08', '2025-05-29 13:33:57', 0, NULL);
-
---
--- Triggers `users`
---
-DELIMITER $$
-CREATE TRIGGER `after_user_login_attempt` AFTER UPDATE ON `users` FOR EACH ROW BEGIN
-        IF OLD.login_attempts <> NEW.login_attempts AND NEW.login_attempts >= 5 THEN
-            INSERT INTO security_logs (user_id, ip_address, action, details, status)
-            VALUES (NEW.id, NEW.last_login_ip, 'account_lock', 
-                    'Account locked due to too many failed attempts', 'failure');
-        END IF;
-    END
-$$
-DELIMITER ;
+(1, NULL, 'admin123', '$2y$10$/24PwFnI6rStgc5LNApH7.Ii2SNGC6u7KgXH5Ol2O.UCZCQvXEtmW', 'System Administrator', 'kmthasan1715@gmail.com', 'admin', 1, '2025-06-01 12:34:55', '::1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-06-01 06:34:18', '2025-06-01 06:34:55', 0, NULL);
 
 --
 -- Indexes for dumped tables
@@ -778,7 +683,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `brand`
 --
 ALTER TABLE `brand`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -790,7 +695,7 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT for table `child_category`
 --
 ALTER TABLE `child_category`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `customers`
@@ -808,37 +713,37 @@ ALTER TABLE `inventory_adjustments`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `purchase`
 --
 ALTER TABLE `purchase`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `purchase_items`
 --
 ALTER TABLE `purchase_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `purchase_payment`
 --
 ALTER TABLE `purchase_payment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `purchase_returns`
 --
 ALTER TABLE `purchase_returns`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `purchase_return_items`
 --
 ALTER TABLE `purchase_return_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `sales`
@@ -874,37 +779,37 @@ ALTER TABLE `sale_items`
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `stock`
 --
 ALTER TABLE `stock`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `sub_category`
 --
 ALTER TABLE `sub_category`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `suppliers`
 --
 ALTER TABLE `suppliers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `system_logs`
 --
 ALTER TABLE `system_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- Constraints for dumped tables
