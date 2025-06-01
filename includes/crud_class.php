@@ -14,11 +14,43 @@ class CRUD {
         $this->connect->set_charset("utf8mb4");
     }
 
+    /**
+     * Builds WHERE clause from conditions array
+     */
+    private function buildWhereClause($conditions) {
+        if (empty($conditions)) return ['sql' => '', 'params' => []];
+        
+        $whereParts = [];
+        $params = [];
+        
+        foreach ($conditions as $key => $value) {
+            // Check if key contains an operator (like 'date >=')
+            if (preg_match('/^(.+?)\s*(=|!=|<>|>|<|>=|<=|LIKE|NOT LIKE|IN|NOT IN)\s*$/i', $key, $matches)) {
+                $column = trim($matches[1]);
+                $operator = trim($matches[2]);
+            } else {
+                $column = $key;
+                $operator = '=';
+            }
+            
+            // Validate column name
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
+                return ['sql' => '', 'params' => [], 'error' => "Invalid column name: $column"];
+            }
+            
+            $whereParts[] = "`$column` $operator ?";
+            $params[] = $value;
+        }
+        
+        return [
+            'sql' => 'WHERE ' . implode(' AND ', $whereParts),
+            'params' => $params
+        ];
+    }
+
     // Secure parameter binding to prevent SQL injection
     private function bind_params($stmt, $params) {
-        if (empty($params)) {
-            return true;
-        }
+        if (empty($params)) return true;
         
         $types = '';
         $values = [];
@@ -59,22 +91,22 @@ class CRUD {
 
         $sql = "SELECT $fields FROM `$table`";
 
-        if ($where && is_array($where)) {
-            $sql .= " WHERE ";
-            $i = 0;
-            foreach ($where as $k => $v) {
-                if (!preg_match('/^[a-zA-Z0-9_]+$/', $k)) {
-                    return ['data' => [], 'error' => 1, 'error_msg' => "Invalid column name in WHERE clause"];
+        // Handle WHERE clause
+        if ($where) {
+            if (is_array($where)) {
+                $whereClause = $this->buildWhereClause($where);
+                if (isset($whereClause['error'])) {
+                    return ['data' => [], 'error' => 1, 'error_msg' => $whereClause['error']];
                 }
-                $sql .= "`$k` = ?";
-                $params[] = $v;
-                if ($i < count($where) - 1) {
-                    $sql .= " AND ";
-                }
-                $i++;
+                $sql .= ' ' . $whereClause['sql'];
+                $params = $whereClause['params'];
+            } else {
+                // Handle raw WHERE string
+                $sql .= " WHERE $where";
             }
         }
 
+        // Handle sorting
         if ($sort) {
             if (!preg_match('/^[a-zA-Z0-9_]+$/', $sort)) {
                 return ['data' => [], 'error' => 1, 'error_msg' => "Invalid sort column"];
@@ -82,6 +114,7 @@ class CRUD {
             $sql .= " ORDER BY `$sort` " . (strtoupper($sort_type) === 'DESC' ? 'DESC' : 'ASC');
         }
 
+        // Handle limit/offset
         if ($limit !== false) {
             $limit = (int)$limit;
             if ($limit <= 0) {
@@ -115,7 +148,6 @@ class CRUD {
                         $data[] = $r;
                     }
                 }
-                // No data is not considered an error - returns empty array
             } else {
                 $error = 1;
                 $error_msg = $stmt->error;
@@ -291,6 +323,18 @@ class CRUD {
         }
         
         return ['data' => $data, 'error' => $error, 'error_msg' => $error_msg];
+    }
+    
+    public function begin_transaction() {
+        return $this->connect->begin_transaction();
+    }
+
+    public function commit() {
+        return $this->connect->commit();
+    }
+
+    public function rollback() {
+        return $this->connect->rollback();
     }
 
     // Close connection

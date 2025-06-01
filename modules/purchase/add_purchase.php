@@ -4,117 +4,90 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     header("Location: ../../login.php");
     exit();
 }
-require_once __DIR__ . '/../../db_plugin.php';
+require_once __DIR__ . '/../../db_plugin.php'; 
 require_once __DIR__ . '/../../includes/functions.php';
-
-$suppliers = $mysqli->common_select('suppliers', '*');
-$products = $mysqli->common_select('products', 'id, name, barcode, price', ['is_deleted' => 0]);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $mysqli->begin_transaction();
+    
     try {
-        // Calculate totals from items
-        $subtotal = 0;
-        $total = 0;
-        $items = [];
-        
-        foreach ($_POST['product_id'] as $index => $productId) {
-            $quantity = (float)$_POST['quantity'][$index];
-            $unitPrice = (float)$_POST['unit_price'][$index];
-            $itemDiscount = (float)$_POST['item_discount'][$index];
-            $itemVat = (float)$_POST['item_vat'][$index];
-            
-            $itemSubtotal = $quantity * $unitPrice;
-            $itemDiscountAmount = $itemSubtotal * ($itemDiscount / 100);
-            $itemTotal = ($itemSubtotal - $itemDiscountAmount) * (1 + ($itemVat / 100));
-            
-            $subtotal += $itemSubtotal;
-            $total += $itemTotal;
-            
-            $items[] = [
-                'product_id' => $productId,
-                'quantity' => $quantity,
-                'unit_price' => $unitPrice,
-                'item_discount' => $itemDiscount,
-                'item_vat' => $itemVat,
-                'item_total' => $itemTotal
-            ];
-        }
-
-        // Apply global discount/VAT if needed
-        $globalDiscount = (float)$_POST['discount'];
-        $globalVat = (float)$_POST['vat'];
-        
-        $discountAmount = $subtotal * ($globalDiscount / 100);
-        $vatAmount = ($subtotal - $discountAmount) * ($globalVat / 100);
-        $grandTotal = ($subtotal - $discountAmount) + $vatAmount;
-
-        // Insert into `purchase`
-        $purchaseData = [
+        // Insert purchase record
+        $purchase_data = [
             'supplier_id' => $_POST['supplier_id'],
-            'purchase_date' => $_POST['purchase_date'],
-            'reference_no' => generateReferenceNo('PUR'),
+            'reference_no' => 'PUR-' . strtoupper(uniqid()),
+            'purchase_date' => date('Y-m-d', strtotime($_POST['purchase_date'])),
             'payment_method' => $_POST['payment_method'],
             'payment_status' => $_POST['payment_status'],
-            'subtotal' => $subtotal,
-            'discount' => $globalDiscount,
-            'discount_amount' => $discountAmount,
-            'vat' => $globalVat,
-            'vat_amount' => $vatAmount,
-            'total' => $grandTotal,
+            'subtotal' => $_POST['subtotal'],
+            'vat' => $_POST['vat'],
+            'discount' => $_POST['discount'],
+            'total' => $_POST['total'],
             'user_id' => $_SESSION['user']->id
         ];
-
-        $purchaseResult = $mysqli->common_insert('purchase', $purchaseData);
         
-        if ($purchaseResult['error']) {
-            throw new Exception($purchaseResult['error_msg']);
-        }
-
-        $purchaseId = $purchaseResult['data'];
+        $purchase_result = $mysqli->common_insert('purchase', $purchase_data);
+        if ($purchase_result['error']) throw new Exception($purchase_result['error_msg']);
         
-        // Insert items
-        foreach ($items as $item) {
-            $itemData = [
-                'purchase_id' => $purchaseId,
-                'product_id' => $item['product_id'],
-                'quantity' => $item['quantity'],
-                'unit_price' => $item['unit_price'],
-                'discount' => $item['item_discount'],
-                'vat' => $item['item_vat'],
-                'total_price' => $item['item_total']
+        $purchase_id = $purchase_result['data'];
+        
+        // Insert purchase items
+        foreach ($_POST['products'] as $product) {
+            $item_data = [
+                'purchase_id' => $purchase_id,
+                'product_id' => $product['id'],
+                'quantity' => $product['quantity'],
+                'unit_price' => $product['price'],
+                'discount' => $product['discount'] ?? 0,
+                'subtotal' => $product['subtotal'],
+                'vat' => $product['vat'] ?? 0,
+                'total_price' => $product['total']
             ];
             
-            $itemResult = $mysqli->common_insert('purchase_items', $itemData);
-            if ($itemResult['error']) {
-                throw new Exception("Failed to add item: " . $itemResult['error_msg']);
-            }
+            $item_result = $mysqli->common_insert('purchase_items', $item_data);
+            if ($item_result['error']) throw new Exception($item_result['error_msg']);
+            
+            // Update stock
+            $stock_data = [
+                'product_id' => $product['id'],
+                'user_id' => $_SESSION['user']->id,
+                'change_type' => 'purchase',
+                'qty' => $product['quantity'],
+                'price' => $product['price'],
+                'purchase_id' => $purchase_id,
+                'note' => 'Purchase added'
+            ];
+            
+            $stock_result = $mysqli->common_insert('stock', $stock_data);
+            if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
         }
         
-        // Handle payment
-        if ($_POST['payment_status'] === 'partial' || $_POST['payment_status'] === 'paid') {
-            $paymentData = [
+        // Insert payment if paid
+        if ($_POST['payment_status'] == 'paid' || $_POST['payment_status'] == 'partial') {
+            $payment_data = [
                 'supplier_id' => $_POST['supplier_id'],
-                'purchase_id' => $purchaseId,
+                'purchase_id' => $purchase_id,
                 'type' => 'payment',
                 'amount' => $_POST['amount_paid'],
-                'payment_method' => $_POST['payment_method'],
-                'description' => 'Initial payment for purchase #' . $purchaseId
+                'payment_method' => $_POST['payment_method']
             ];
             
-            $paymentResult = $mysqli->common_insert('purchase_payment', $paymentData);
-            if ($paymentResult['error']) {
-                throw new Exception("Payment record failed: " . $paymentResult['error_msg']);
-            }
+            $payment_result = $mysqli->common_insert('purchase_payment', $payment_data);
+            if ($payment_result['error']) throw new Exception($payment_result['error_msg']);
         }
         
-        setFlashMessage('Purchase added successfully!', 'success');
-        header('Location: view_purchases.php');
-        exit;
-
+        $mysqli->commit();
+        $_SESSION['success'] = "Purchase added successfully!";
+        header("Location: view_purchases.php");
+        exit();
     } catch (Exception $e) {
-        setFlashMessage('Error: ' . $e->getMessage(), 'danger');
+        $mysqli->rollback();
+        $_SESSION['error'] = "Error: " . $e->getMessage();
     }
 }
+
+// Get suppliers and products for dropdowns
+$suppliers = $mysqli->common_select('suppliers')['data'];
+$products = $mysqli->common_select('products', '*', ['is_deleted' => 0])['data'];
 
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
@@ -123,43 +96,35 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 
 <div class="container">
     <div class="page-inner">
-        <div class="page-header">
-            <h4 class="page-title">Add New Purchase</h4>
-        </div>
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-12 grid-margin">
                 <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">Purchase Details</div>
-                    </div>
-                    <form method="post" id="purchaseForm">
-                        <div class="card-body">
+                    <div class="card-body">
+                        <h4 class="card-title">Add New Purchase</h4>
+                        
+                        <form id="purchaseForm" method="POST">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="supplier_id">Supplier</label>
-                                        <select class="form-control" id="supplier_id" name="supplier_id" required>
+                                        <label>Supplier *</label>
+                                        <select class="form-control" name="supplier_id" required>
                                             <option value="">Select Supplier</option>
-                                            <?php foreach ($suppliers['data'] as $supplier): ?>
+                                            <?php foreach ($suppliers as $supplier): ?>
                                                 <option value="<?= $supplier->id ?>"><?= $supplier->name ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="purchase_date">Purchase Date</label>
-                                        <input type="date" class="form-control" id="purchase_date" name="purchase_date" 
-                                               value="<?= date('Y-m-d') ?>" required>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="payment_method">Payment Method</label>
-                                        <select class="form-control" id="payment_method" name="payment_method" required>
+                                        <label>Purchase Date *</label>
+                                        <input type="date" class="form-control" name="purchase_date" value="<?= date('Y-m-d') ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Payment Method *</label>
+                                        <select class="form-control" name="payment_method" required>
                                             <option value="cash">Cash</option>
                                             <option value="credit">Credit</option>
                                             <option value="card">Card</option>
@@ -167,214 +132,192 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label for="payment_status">Payment Status</label>
-                                        <select class="form-control" id="payment_status" name="payment_status" required>
+                                        <label>Payment Status *</label>
+                                        <select class="form-control" name="payment_status" id="paymentStatus" required>
                                             <option value="pending">Pending</option>
                                             <option value="partial">Partial</option>
                                             <option value="paid">Paid</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-4" id="amountPaidField" style="display: none;">
+                                <div class="col-md-4" id="amountPaidField" style="display:none;">
                                     <div class="form-group">
-                                        <label for="amount_paid">Amount Paid</label>
-                                        <input type="number" class="form-control" id="amount_paid" name="amount_paid" min="0" step="0.01">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label for="discount">Global Discount (%)</label>
-                                        <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label for="vat">Global VAT (%)</label>
-                                        <input type="number" class="form-control" id="vat" name="vat" min="0" value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label>Subtotal</label>
-                                        <input type="text" class="form-control" id="subtotal" name="subtotal" readonly value="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label>Grand Total</label>
-                                        <input type="text" class="form-control" id="total" name="total" readonly value="0">
+                                        <label>Amount Paid *</label>
+                                        <input type="number" class="form-control" name="amount_paid" step="0.01" min="0">
                                     </div>
                                 </div>
                             </div>
                             
                             <hr>
-                            <h4>Purchase Items</h4>
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="purchaseItemsTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Product</th>
-                                            <th>Qty</th>
-                                            <th>Unit Price</th>
-                                            <th>Discount %</th>
-                                            <th>VAT %</th>
-                                            <th>Subtotal</th>
-                                            <th>Total</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <select class="form-control product-select" name="product_id[]" required>
-                                                    <option value="">Select Product</option>
-                                                    <?php foreach ($products['data'] as $product): ?>
-                                                        <option value="<?= $product->id ?>" data-price="<?= $product->price ?>">
-                                                            <?= $product->name ?> (<?= $product->barcode ?>)
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </td>
-                                            <td><input type="number" class="form-control quantity" name="quantity[]" min="1" value="1" required></td>
-                                            <td><input type="number" class="form-control unit-price" name="unit_price[]" min="0" step="0.01" required></td>
-                                            <td><input type="number" class="form-control item-discount" name="item_discount[]" min="0" max="100" value="0" step="0.01"></td>
-                                            <td><input type="number" class="form-control item-vat" name="item_vat[]" min="0" value="0" step="0.01"></td>
-                                            <td><input type="text" class="form-control item-subtotal" readonly></td>
-                                            <td><input type="text" class="form-control item-total" readonly></td>
-                                            <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="8">
-                                                <button type="button" class="btn btn-primary btn-sm" id="addRow">Add Item</button>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                            
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Purchase Items</h5>
+                                    <table class="table table-bordered" id="itemTable">
+                                        <thead>
+                                            <tr>
+                                                <th width="30%">Product</th>
+                                                <th width="15%">Quantity</th>
+                                                <th width="15%">Unit Price</th>
+                                                <th width="10%">Discount %</th>
+                                                <th width="15%">VAT %</th>
+                                                <th width="15%">Total</th>
+                                                <th width="10%">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="itemTbody">
+                                            <!-- Items will be added dynamically -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="5" class="text-right"><strong>Subtotal</strong></td>
+                                                <td><input type="text" class="form-control" id="subtotal" name="subtotal" readonly></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-right"><strong>Discount</strong></td>
+                                                <td><input type="text" class="form-control" id="discount" name="discount" readonly></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-right"><strong>VAT</strong></td>
+                                                <td><input type="text" class="form-control" id="vat" name="vat" readonly></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="5" class="text-right"><strong>Total</strong></td>
+                                                <td><input type="text" class="form-control" id="total" name="total" readonly></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                    
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-primary" id="addItemBtn">Add Item</button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="card-action">
+                            
                             <button type="submit" class="btn btn-success">Save Purchase</button>
                             <a href="view_purchases.php" class="btn btn-danger">Cancel</a>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<?php require_once __DIR__ . '/../../requires/footer.php'; ?>
+<?php include __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
-    // Show/hide amount paid field based on payment status
-    $('#payment_status').change(function() {
-        if ($(this).val() === 'partial' || $(this).val() === 'paid') {
+    // Payment status change handler
+    $('#paymentStatus').change(function() {
+        if ($(this).val() === 'paid' || $(this).val() === 'partial') {
             $('#amountPaidField').show();
+            $('input[name="amount_paid"]').attr('required', true);
         } else {
             $('#amountPaidField').hide();
+            $('input[name="amount_paid"]').attr('required', false);
         }
-    }).trigger('change');
+    });
     
-    // Add new row
-    $('#addRow').click(function() {
-        const newRow = `
-            <tr>
+    // Add item button handler
+    $('#addItemBtn').click(function() {
+        addItemRow();
+    });
+    
+    // Initial item row
+    addItemRow();
+    
+    function addItemRow() {
+        const rowId = Date.now();
+        const row = `
+            <tr id="row${rowId}">
                 <td>
-                    <select class="form-control product-select" name="product_id[]" required>
+                    <select class="form-control product-select" name="products[${rowId}][id]" required>
                         <option value="">Select Product</option>
-                        <?php foreach ($products['data'] as $product): ?>
-                            <option value="<?= $product->id ?>" data-price="<?= $product->price ?>">
-                                <?= $product->name ?> (<?= $product->barcode ?>)
-                            </option>
+                        <?php foreach ($products as $product): ?>
+                            <option value="<?= $product->id ?>" data-price="<?= $product->price ?>"><?= $product->name ?> (<?= $product->barcode ?>)</option>
                         <?php endforeach; ?>
                     </select>
                 </td>
-                <td><input type="number" class="form-control quantity" name="quantity[]" min="1" value="1" required></td>
-                <td><input type="number" class="form-control unit-price" name="unit_price[]" min="0" step="0.01" required></td>
-                <td><input type="number" class="form-control item-discount" name="item_discount[]" min="0" max="100" value="0" step="0.01"></td>
-                <td><input type="number" class="form-control item-vat" name="item_vat[]" min="0" value="0" step="0.01"></td>
-                <td><input type="text" class="form-control item-subtotal" readonly></td>
-                <td><input type="text" class="form-control item-total" readonly></td>
-                <td><button type="button" class="btn btn-danger btn-sm remove-row"><i class="fas fa-trash"></i></button></td>
+                <td><input type="number" class="form-control quantity" name="products[${rowId}][quantity]" min="1" value="1" required></td>
+                <td><input type="number" class="form-control price" name="products[${rowId}][price]" step="0.01" min="0" required></td>
+                <td><input type="number" class="form-control discount" name="products[${rowId}][discount]" step="0.01" min="0" max="100" value="0"></td>
+                <td><input type="number" class="form-control vat" name="products[${rowId}][vat]" step="0.01" min="0" max="100" value="0"></td>
+                <td><input type="text" class="form-control total" name="products[${rowId}][total]" readonly></td>
+                <td><button type="button" class="btn btn-danger btn-sm remove-row" data-row="${rowId}">Remove</button></td>
             </tr>
         `;
-        $('#purchaseItemsTable tbody').append(newRow);
-    });
-    
-    // Remove row
-    $(document).on('click', '.remove-row', function() {
-        if ($('#purchaseItemsTable tbody tr').length > 1) {
-            $(this).closest('tr').remove();
-            calculateTotals();
-        } else {
-            alert('You must have at least one item');
-        }
-    });
-    
-    // Set unit price when product selected
-    $(document).on('change', '.product-select', function() {
-        const selectedOption = $(this).find('option:selected');
-        const defaultPrice = selectedOption.data('price');
-        $(this).closest('tr').find('.unit-price').val(defaultPrice || '0.00');
-        calculateRowTotal($(this).closest('tr'));
-    });
-    
-    // Calculate row total when any input changes
-    $(document).on('input', '.quantity, .unit-price, .item-discount, .item-vat', function() {
-        calculateRowTotal($(this).closest('tr'));
-    });
-    
-    // Calculate row total
-    function calculateRowTotal(row) {
-        const quantity = parseFloat(row.find('.quantity').val()) || 0;
-        const unitPrice = parseFloat(row.find('.unit-price').val()) || 0;
-        const itemDiscount = parseFloat(row.find('.item-discount').val()) || 0;
-        const itemVat = parseFloat(row.find('.item-vat').val()) || 0;
+        $('#itemTbody').append(row);
         
-        const subtotal = quantity * unitPrice;
-        const discountAmount = subtotal * (itemDiscount / 100);
-        const total = (subtotal - discountAmount) * (1 + (itemVat / 100));
-        
-        row.find('.item-subtotal').val(subtotal.toFixed(2));
-        row.find('.item-total').val(total.toFixed(2));
-        calculateTotals();
-    }
-    
-    // Calculate all totals
-    function calculateTotals() {
-        let subtotal = 0;
-        let total = 0;
-        
-        $('#purchaseItemsTable tbody tr').each(function() {
-            subtotal += parseFloat($(this).find('.item-subtotal').val()) || 0;
-            total += parseFloat($(this).find('.item-total').val()) || 0;
+        // Set default price when product is selected
+        $(`#row${rowId} .product-select`).change(function() {
+            const selectedOption = $(this).find('option:selected');
+            const price = selectedOption.data('price');
+            $(`#row${rowId} .price`).val(price).trigger('change');
         });
         
-        // Apply global discount/VAT
-        const globalDiscount = parseFloat($('#discount').val()) || 0;
-        const globalVat = parseFloat($('#vat').val()) || 0;
+        // Calculate totals when values change
+        $(`#row${rowId} .quantity, #row${rowId} .price, #row${rowId} .discount, #row${rowId} .vat`).change(function() {
+            calculateRowTotal(rowId);
+            calculateGrandTotal();
+        });
         
-        const discountAmount = subtotal * (globalDiscount / 100);
-        const vatAmount = (subtotal - discountAmount) * (globalVat / 100);
-        const grandTotal = (subtotal - discountAmount) + vatAmount;
-        
-        $('#subtotal').val(subtotal.toFixed(2));
-        $('#total').val(grandTotal.toFixed(2));
-        
-        // Update amount paid if shown
-        if ($('#amountPaidField').is(':visible')) {
-            $('#amount_paid').val(grandTotal.toFixed(2));
-        }
+        // Remove row button
+        $(`#row${rowId} .remove-row`).click(function() {
+            $(`#row${rowId}`).remove();
+            calculateGrandTotal();
+        });
     }
     
-    // Calculate totals when global discount/VAT changes
-    $('#discount, #vat').on('input', calculateTotals);
+    function calculateRowTotal(rowId) {
+        const quantity = parseFloat($(`#row${rowId} .quantity`).val()) || 0;
+        const price = parseFloat($(`#row${rowId} .price`).val()) || 0;
+        const discount = parseFloat($(`#row${rowId} .discount`).val()) || 0;
+        const vat = parseFloat($(`#row${rowId} .vat`).val()) || 0;
+        
+        const subtotal = quantity * price;
+        const discountAmount = subtotal * (discount / 100);
+        const taxable = subtotal - discountAmount;
+        const vatAmount = taxable * (vat / 100);
+        const total = taxable + vatAmount;
+        
+        $(`#row${rowId} .total`).val(total.toFixed(2));
+    }
+    
+    function calculateGrandTotal() {
+        let subtotal = 0;
+        let totalDiscount = 0;
+        let totalVat = 0;
+        let grandTotal = 0;
+        
+        $('#itemTbody tr').each(function() {
+            const quantity = parseFloat($(this).find('.quantity').val()) || 0;
+            const price = parseFloat($(this).find('.price').val()) || 0;
+            const discount = parseFloat($(this).find('.discount').val()) || 0;
+            const vat = parseFloat($(this).find('.vat').val()) || 0;
+            
+            const rowSubtotal = quantity * price;
+            const rowDiscount = rowSubtotal * (discount / 100);
+            const taxable = rowSubtotal - rowDiscount;
+            const rowVat = taxable * (vat / 100);
+            
+            subtotal += rowSubtotal;
+            totalDiscount += rowDiscount;
+            totalVat += rowVat;
+            grandTotal += taxable + rowVat;
+        });
+        
+        $('#subtotal').val(subtotal.toFixed(2));
+        $('#discount').val(totalDiscount.toFixed(2));
+        $('#vat').val(totalVat.toFixed(2));
+        $('#total').val(grandTotal.toFixed(2));
+    }
 });
 </script>

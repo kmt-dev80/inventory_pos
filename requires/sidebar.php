@@ -106,13 +106,28 @@
           <div class="collapse" id="forms">
             <ul class="nav nav-collapse">
               <li>
-                <a href="sales.php">
+                <a href="<?= BASE_URL ?>modules/sales/pos.php">
                   <span class="sub-item">Sales</span>
                 </a>
               </li>
                 <li>
-                <a href="sales_report.php">
+                <a href="<?= BASE_URL ?>modules/sales/view_sales.php">
                   <span class="sub-item">Sales Report</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/sales/sales_return.php">
+                  <span class="sub-item">Sales</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/sales/sales_reports.php">
+                  <span class="sub-item">Sales</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/sales/sale_details.php">
+                  <span class="sub-item">Sales</span>
                 </a>
               </li>
             </ul>
@@ -147,7 +162,7 @@
                 </a>
               </li>
                <li>
-                <a href="<?= BASE_URL ?>modules/purchase/purchase_returns.php">
+                <a href="<?= BASE_URL ?>modules/purchase/purchase_return.php">
                   <span class="sub-item">Purchase Returns</span>
                 </a>
               </li>

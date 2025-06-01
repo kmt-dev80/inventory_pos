@@ -1,4 +1,5 @@
 <?php
+/*
 // Generate reference number
 function generateReferenceNo($prefix = '') {
     return $prefix . strtoupper(uniqid());
@@ -27,7 +28,7 @@ function displayFlashMessage() {
               </div>';
     }
 }
-/*
+
 // Check user permissions
 function checkPermission($requiredPermission) {
     if (!isset($_SESSION['user']) || 

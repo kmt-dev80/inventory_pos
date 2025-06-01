@@ -4,28 +4,47 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     header("Location: ../../login.php");
     exit();
 }
-require_once __DIR__ . '/../../db_plugin.php';
+require_once __DIR__ . '/../../db_plugin.php'; 
 require_once __DIR__ . '/../../includes/functions.php';
 
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    header('Location: view_purchases.php');
-    exit;
+// Get purchase ID
+if (!isset($_GET['id'])) {
+    header("Location: view_purchases.php");
+    exit();
 }
 
-$purchaseId = (int)$_GET['id'];
-$purchase = $mysqli->common_select('purchase', '*', ['id' => $purchaseId]);
-$purchaseItems = $mysqli->common_select('purchase_items', '*', ['purchase_id' => $purchaseId]);
-$payments = $mysqli->common_select('purchase_payment', '*', ['purchase_id' => $purchaseId], 'created_at', 'desc');
+$purchase_id = $_GET['id'];
 
-if ($purchase['error'] || empty($purchase['data'])) {
-    setFlashMessage('Purchase not found', 'danger');
-    header('Location: view_purchases.php');
-    exit;
+// Get purchase details
+$purchase_result = $mysqli->common_select('purchase', '*', ['id' => $purchase_id]);
+if ($purchase_result['error'] || empty($purchase_result['data'])) {
+    $_SESSION['error'] = "Purchase not found!";
+    header("Location: view_purchases.php");
+    exit();
 }
 
-$purchase = $purchase['data'][0];
-$supplier = $mysqli->common_select('suppliers', '*', ['id' => $purchase->supplier_id]);
-$user = $mysqli->common_select('users', 'full_name', ['id' => $purchase->user_id]);
+$purchase = $purchase_result['data'][0];
+
+// Get supplier details
+$supplier = $mysqli->common_select('suppliers', '*', ['id' => $purchase->supplier_id])['data'][0] ?? null;
+
+// Get purchase items
+$items_result = $mysqli->common_select('purchase_items', '*', ['purchase_id' => $purchase_id]);
+$items = $items_result['data'];
+
+// Get payments
+$payments_result = $mysqli->common_select('purchase_payment', '*', ['purchase_id' => $purchase_id]);
+$payments = $payments_result['data'];
+
+// Calculate paid amount
+$paid_amount = 0;
+foreach ($payments as $payment) {
+    if ($payment->type == 'payment') {
+        $paid_amount += $payment->amount;
+    } else {
+        $paid_amount -= $payment->amount;
+    }
+}
 
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
@@ -34,211 +53,180 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 
 <div class="container">
     <div class="page-inner">
-        <div class="page-header">
-            <h4 class="page-title">Purchase Details</h4>
-        </div>
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-12 grid-margin">
                 <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex align-items-center">
-                            <h4 class="card-title">Purchase #<?= $purchase->reference_no ?></h4>
-                            <div class="ml-auto">
-                                <a href="view_purchases.php" class="btn btn-primary btn-round">
-                                    <i class="fas fa-arrow-left"></i> Back to Purchases
-                                </a>
-                            </div>
-                        </div>
-                    </div>
                     <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="card-title">Purchase Details #<?= $purchase->reference_no ?></h4>
+                            <a href="view_purchases.php" class="btn btn-secondary">Back to Purchases</a>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Supplier</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= !$supplier['error'] && !empty($supplier['data']) ? $supplier['data'][0]->name : 'N/A' ?>">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5>Supplier Information</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <?php if ($supplier): ?>
+                                            <p><strong>Name:</strong> <?= $supplier->name ?></p>
+                                            <p><strong>Company:</strong> <?= $supplier->company_name ?? 'N/A' ?></p>
+                                            <p><strong>Phone:</strong> <?= $supplier->phone ?? 'N/A' ?></p>
+                                            <p><strong>Email:</strong> <?= $supplier->email ?? 'N/A' ?></p>
+                                            <p><strong>Address:</strong> <?= $supplier->address ?? 'N/A' ?></p>
+                                        <?php else: ?>
+                                            <p>Supplier information not available</p>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
+                            
                             <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Reference No</label>
-                                    <input type="text" class="form-control" readonly value="<?= $purchase->reference_no ?>">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Date</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= date('d M Y h:i A', strtotime($purchase->created_at)) ?>">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Payment Method</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= ucfirst($purchase->payment_method) ?>">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Payment Status</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= ucfirst($purchase->payment_status) ?>">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Subtotal</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= number_format($purchase->subtotal, 2) ?>">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Discount (<?= $purchase->discount ?>%)</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= number_format($purchase->subtotal * ($purchase->discount / 100), 2) ?>">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>VAT</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= number_format($purchase->vat, 2) ?>">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Total</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= number_format($purchase->total, 2) ?>">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Recorded By</label>
-                                    <input type="text" class="form-control" readonly 
-                                        value="<?= !$user['error'] && !empty($user['data']) ? $user['data'][0]->full_name : 'N/A' ?>">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <hr>
-                        <h4>Purchase Items</h4>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Product</th>
-                                        <th>Barcode</th>
-                                        <th>Quantity</th>
-                                        <th>Unit Price</th>
-                                        <th>Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (!$purchaseItems['error'] && !empty($purchaseItems['data'])): ?>
-                                        <?php foreach ($purchaseItems['data'] as $index => $item): 
-                                            $product = $mysqli->common_select('products', 'name, barcode', ['id' => $item->product_id]);
-                                        ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td><?= !$product['error'] && !empty($product['data']) ? $product['data'][0]->name : 'Product Not Found' ?></td>
-                                                <td><?= !$product['error'] && !empty($product['data']) ? $product['data'][0]->barcode : 'N/A' ?></td>
-                                                <td><?= $item->quantity ?></td>
-                                                <td><?= number_format($item->unit_price, 2) ?></td>
-                                                <td><?= number_format($item->quantity * $item->unit_price, 2) ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="6" class="text-center">No items found</td>
-                                        </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <hr>
-                        <h4>Payment History</h4>
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Date</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (!$payments['error'] && !empty($payments['data'])): ?>
-                                        <?php foreach ($payments['data'] as $index => $payment): ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td><?= date('d M Y h:i A', strtotime($payment->created_at)) ?></td>
-                                                <td><?= number_format($payment->amount, 2) ?></td>
-                                                <td><?= ucfirst($payment->payment_method) ?></td>
-                                                <td><?= $payment->description ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="5" class="text-center">No payments found</td>
-                                        </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="2">Total Paid</th>
-                                        <th colspan="3">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5>Purchase Information</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Reference No:</strong> <?= $purchase->reference_no ?></p>
+                                        <p><strong>Date:</strong> <?= date('d M Y', strtotime($purchase->purchase_date)) ?></p>
+                                        <p><strong>Payment Method:</strong> <?= ucfirst($purchase->payment_method) ?></p>
+                                        <p>
+                                            <strong>Status:</strong> 
+                                            <span class="badge badge-<?= 
+                                                $purchase->payment_status == 'paid' ? 'success' : 
+                                                ($purchase->payment_status == 'partial' ? 'warning' : 'danger')
+                                            ?>">
+                                                <?= ucfirst($purchase->payment_status) ?>
+                                            </span>
+                                        </p>
+                                        <p><strong>Created By:</strong> 
                                             <?php 
-                                                $totalPaid = 0;
-                                                if (!$payments['error'] && !empty($payments['data'])) {
-                                                    foreach ($payments['data'] as $payment) {
-                                                        $totalPaid += $payment->amount;
-                                                    }
-                                                }
-                                                echo number_format($totalPaid, 2);
+                                                $user = $mysqli->common_select('users', 'full_name', ['id' => $purchase->user_id])['data'][0] ?? null;
+                                                echo $user ? $user->full_name : 'Unknown';
                                             ?>
-                                        </th>
-                                    </tr>
-                                    <tr>
-                                        <th colspan="2">Balance</th>
-                                        <th colspan="3">
-                                            <?= number_format($purchase->total - $totalPaid, 2) ?>
-                                        </th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-action">
-                        <a href="purchase_payments.php?id=<?= $purchase->id ?>" class="btn btn-warning">
-                            <i class="fas fa-money-bill-wave"></i> Add Payment
-                        </a>
-                        <a href="edit_purchase.php?id=<?= $purchase->id ?>" class="btn btn-primary">
-                            <i class="fas fa-edit"></i> Edit Purchase
-                        </a>
-                        <a href="purchase_returns.php?purchase_id=<?= $purchase->id ?>" class="btn btn-info">
-                            <i class="fas fa-undo"></i> Create Return
-                        </a>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Purchase Items</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Unit Price</th>
+                                                <th>Discount</th>
+                                                <th>VAT</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($items as $index => $item): 
+                                                $product = $mysqli->common_select('products', '*', ['id' => $item->product_id])['data'][0] ?? null;
+                                            ?>
+                                                <tr>
+                                                    <td><?= $index + 1 ?></td>
+                                                    <td><?= $product ? $product->name . ' (' . $product->barcode . ')' : 'Product not found' ?></td>
+                                                    <td><?= $item->quantity ?></td>
+                                                    <td><?= number_format($item->unit_price, 2) ?></td>
+                                                    <td><?= number_format($item->discount, 2) ?></td>
+                                                    <td><?= number_format($item->vat, 2) ?></td>
+                                                    <td><?= number_format($item->total_price, 2) ?></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="6" class="text-right"><strong>Subtotal</strong></td>
+                                                <td><?= number_format($purchase->subtotal, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" class="text-right"><strong>Discount</strong></td>
+                                                <td><?= number_format($purchase->discount, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" class="text-right"><strong>VAT</strong></td>
+                                                <td><?= number_format($purchase->vat, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" class="text-right"><strong>Total</strong></td>
+                                                <td><?= number_format($purchase->total, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" class="text-right"><strong>Paid Amount</strong></td>
+                                                <td><?= number_format($paid_amount, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" class="text-right"><strong>Balance Due</strong></td>
+                                                <td><?= number_format($purchase->total - $paid_amount, 2) ?></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Payment History</h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($payments)): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Type</th>
+                                                    <th>Amount</th>
+                                                    <th>Method</th>
+                                                    <th>Description</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($payments as $payment): ?>
+                                                    <tr>
+                                                        <td><?= date('d M Y H:i', strtotime($payment->created_at)) ?></td>
+                                                        <td>
+                                                            <span class="badge badge-<?= $payment->type == 'payment' ? 'success' : 'danger' ?>">
+                                                                <?= ucfirst($payment->type) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td><?= number_format($payment->amount, 2) ?></td>
+                                                        <td><?= ucfirst($payment->payment_method) ?></td>
+                                                        <td><?= $payment->description ?? 'N/A' ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php else: ?>
+                                    <p>No payment records found for this purchase.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <a href="view_purchases.php" class="btn btn-secondary">Back to Purchases</a>
+                            <?php if ($_SESSION['user']->role == 'admin' || $_SESSION['user']->role == 'manager'): ?>
+                                <a href="edit_purchase.php?id=<?= $purchase->id ?>" class="btn btn-primary">Edit Purchase</a>
+                                <a href="purchase_payments.php?id=<?= $purchase->id ?>" class="btn btn-warning">Add Payment</a>
+                                <a href="purchase_return.php?id=<?= $purchase->id ?>" class="btn btn-info">Return Items</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <?php include __DIR__ . '/../../requires/footer.php'; ?>
