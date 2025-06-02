@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'quantity' => $product['quantity'],
                 'unit_price' => $product['price'],
                 'discount' => $product['discount'] ?? 0,
-                'subtotal' => $product['subtotal'],
+                //'subtotal' => $product['subtotal'],
                 'vat' => $product['vat'] ?? 0,
                 'total_price' => $product['total']
             ];
@@ -190,7 +190,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td></td>
                                             </tr>
                                             <tr>
-                                                <td colspan="5" class="text-right"><strong>Total</strong></td>
+                                                <td colspan="5" class="text-right"><strong>Grand Total</strong></td>
                                                 <td><input type="text" class="form-control" id="total" name="total" readonly></td>
                                                 <td></td>
                                             </tr>

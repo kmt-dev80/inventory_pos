@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'quantity' => $product['quantity'],
                 'unit_price' => $product['price'],
                 'discount' => $product['discount'] ?? 0,
-                'subtotal' => $product['subtotal'],
+                //'subtotal' => $product['subtotal'],
                 'vat' => $product['vat'] ?? 0,
                 'total_price' => $product['total']
             ];
