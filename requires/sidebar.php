@@ -112,22 +112,7 @@
               </li>
                 <li>
                 <a href="<?= BASE_URL ?>modules/sales/view_sales.php">
-                  <span class="sub-item">Sales Report</span>
-                </a>
-              </li>
-              <li>
-                <a href="<?= BASE_URL ?>modules/sales/sales_return.php">
-                  <span class="sub-item">Sales</span>
-                </a>
-              </li>
-              <li>
-                <a href="<?= BASE_URL ?>modules/sales/sales_reports.php">
-                  <span class="sub-item">Sales</span>
-                </a>
-              </li>
-              <li>
-                <a href="<?= BASE_URL ?>modules/sales/sale_details.php">
-                  <span class="sub-item">Sales</span>
+                  <span class="sub-item">View Sales</span>
                 </a>
               </li>
             </ul>
