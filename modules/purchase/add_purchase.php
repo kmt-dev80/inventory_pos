@@ -157,6 +157,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <div class="row">
                                 <div class="col-md-12">
                                     <h5>Purchase Items</h5>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-primary" id="addItemBtn">Add Item</button>
+                                    </div>
                                     <table class="table table-bordered" id="itemTable">
                                         <thead>
                                             <tr>
@@ -196,9 +199,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         </tfoot>
                                     </table>
                                     
-                                    <div class="form-group">
-                                        <button type="button" class="btn btn-primary" id="addItemBtn">Add Item</button>
-                                    </div>
+                                    
                                 </div>
                             </div>
                             

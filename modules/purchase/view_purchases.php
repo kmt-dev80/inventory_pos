@@ -18,17 +18,18 @@ $where = [
     'purchase_date <=' => $end_date
 ];
 
-if ($supplier_id) {
+if ($supplier_id && $supplier_id !='') {
     $where['supplier_id'] = $supplier_id;
 }
 
-if ($status) {
+if ($status && $status !='') {
     $where['payment_status'] = $status;
 }
 
 // Get purchases with the new CRUD class
-//$purchases = $mysqli->common_select('purchase', '*', $where, 'purchase_date DESC')['data'];
-$purchases_result = $mysqli->common_select('purchase', '*', []);
+$purchases_result = $mysqli->common_select('purchase', '*', $where, 'purchase_date','DESC');
+
+//$purchases_result = $mysqli->common_select('purchase', '*', []);
 if ($purchases_result['error']) {
     // Log error and show empty results
     error_log("Purchase query error: " . $purchases_result['error_msg']);
