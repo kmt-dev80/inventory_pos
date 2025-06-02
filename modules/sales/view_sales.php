@@ -5,7 +5,6 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     exit();
 }
 require_once __DIR__ . '/../../db_plugin.php';
-require_once __DIR__ . '/../../includes/functions.php';
 
 // Get filter parameters
 $customer_id = $_GET['customer_id'] ?? '';
