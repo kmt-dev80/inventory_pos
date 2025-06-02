@@ -99,7 +99,7 @@
         </li>
         <li class="nav-item">
           <a data-bs-toggle="collapse" href="#forms">
-            <i class="fas fa-pen-square"></i>
+            <i class="bi bi-cart-check"></i>
             <p>POS</p>
             <span class="caret"></span>
           </a>
@@ -110,9 +110,14 @@
                   <span class="sub-item">Sales</span>
                 </a>
               </li>
-                <li>
+              <li>
                 <a href="<?= BASE_URL ?>modules/sales/view_sales.php">
                   <span class="sub-item">View Sales</span>
+                </a>
+              </li>
+               <li>
+                <a href="<?= BASE_URL ?>modules/sales/sales_report.php">
+                  <span class="sub-item">Sales Report</span>
                 </a>
               </li>
             </ul>
@@ -136,9 +141,20 @@
                   <span class="sub-item">View Suppliers</span>
                 </a>
               </li>
-              <li>
+            </ul>
+          </div>
+        </li>
+        <li class="nav-item">
+          <a data-bs-toggle="collapse" href="#submenu">
+            <i class="fas fa-bars"></i>
+            <p>Purchase</p>
+            <span class="caret"></span>
+          </a>
+          <div class="collapse" id="submenu">
+            <ul class="nav nav-collapse">
+                 <li>
                 <a href="<?= BASE_URL ?>modules/purchase/add_purchase.php">
-                  <span class="sub-item">Purchase</span>
+                  <span class="sub-item">Add Purchase</span>
                 </a>
               </li>
               <li>
@@ -146,9 +162,9 @@
                   <span class="sub-item">View Purchases</span>
                 </a>
               </li>
-               <li>
-                <a href="<?= BASE_URL ?>modules/purchase/purchase_return.php">
-                  <span class="sub-item">Purchase Returns</span>
+              <li>
+                <a href="<?= BASE_URL ?>modules/purchase/view_purchase_returns.php">
+                  <span class="sub-item">View Returns</span>
                 </a>
               </li>
             </ul>
@@ -156,7 +172,7 @@
         </li>
         <li class="nav-item">
           <a data-bs-toggle="collapse" href="#maps">
-            <i class="fas fa-table"></i>
+            <i class="bi bi-person-plus"></i>
             <p>Customers</p>
             <span class="caret"></span>
           </a>
@@ -196,11 +212,26 @@
             </ul>
           </div>
         </li>
-        <li class="nav-item">
-          <a href="stock_logs.php">
-              <i class="far fa-chart-bar"></i>
-            <p>Inventory</p>
+       <li class="nav-item">
+          <a data-bs-toggle="collapse" href="#subnav1">
+            <i class="bi bi-shop"></i>
+            <span class="sub-item">Inventory</span>
+            <span class="caret"></span>
           </a>
+          <div class="collapse" id="subnav1">
+            <ul class="nav nav-collapse subnav">
+              <li>
+                <a href="<?= BASE_URL ?>modules/inventory/stock.php">
+                  <span class="sub-item">View Stock</span>
+                </a>
+              </li>
+              <li>
+                <a href="#">
+                  <span class="sub-item">Level 2</span>
+                </a>
+              </li>
+            </ul>
+          </div>
         </li>
       </ul>
     </div>
