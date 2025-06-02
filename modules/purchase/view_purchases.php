@@ -28,6 +28,7 @@ if ($status) {
 }
 
 // Get purchases with the new CRUD class
+//$purchases = $mysqli->common_select('purchase', '*', $where, 'purchase_date DESC')['data'];
 $purchases_result = $mysqli->common_select('purchase', '*', []);
 if ($purchases_result['error']) {
     // Log error and show empty results
