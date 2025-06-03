@@ -53,14 +53,4 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Price validation
-    $('#sell_price').on('blur', function() {
-        var price = parseFloat($('#price').val()) || 0;
-        var sellPrice = parseFloat($(this).val()) || 0;
-        
-        if (sellPrice < price) {
-            alert('Selling price cannot be lower than purchase price');
-            $(this).val(price.toFixed(2));
-        }
-    });
 });

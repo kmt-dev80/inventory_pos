@@ -6,6 +6,11 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php'; 
 
+if(!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header("Location: stock_report.php");
+    exit();
+}
+
 $product_id = (int)$_GET['id'];
 
 // Get product details
@@ -17,9 +22,6 @@ if($product['error'] || empty($product['data'])) {
 $product = $product['data'][0];
 
 $title = "Stock History - " . htmlspecialchars($product->name);
-require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
-require_once __DIR__ . '/../../requires/sidebar.php';
 
 // Get stock history for this product
 $query = "SELECT s.*, u.full_name as user_name 
@@ -28,10 +30,16 @@ $query = "SELECT s.*, u.full_name as user_name
           WHERE s.product_id = $product_id 
           ORDER BY s.created_at DESC";
 $history = $mysqli->getConnection()->query($query);
+
+// Calculate current stock
+$current_stock = $mysqli->getConnection()->query("SELECT COALESCE(SUM(qty), 0) as stock FROM stock WHERE product_id = $product_id")->fetch_object()->stock;
+require_once __DIR__ . '/../../requires/header.php';
+require_once __DIR__ . '/../../requires/topbar.php';
+require_once __DIR__ . '/../../requires/sidebar.php';
 ?>
 
-<div class="main-content">
-    <div class="container-fluid">
+<div class="container">
+    <div class="page-inner">
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col">
@@ -63,7 +71,7 @@ $history = $mysqli->getConnection()->query($query);
                             </div>
                             <div class="col-md-6 text-end">
                                 <span class="badge bg-light text-dark">
-                                    Current Stock: <?= $product->current_stock ?? 0 ?>
+                                    Current Stock: <?= $current_stock ?>
                                 </span>
                             </div>
                         </div>
@@ -75,7 +83,7 @@ $history = $mysqli->getConnection()->query($query);
                                     <tr>
                                         <th>ID</th>
                                         <th>Type</th>
-                                        <th>Qty</th>
+                                        <th>Qty Change</th>
                                         <th>Price</th>
                                         <th>Reference</th>
                                         <th>Date</th>
@@ -84,15 +92,7 @@ $history = $mysqli->getConnection()->query($query);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while($item = $history->fetch_object()): 
-                                        // Determine reference based on type
-                                        $reference = '';
-                                        if($item->purchase_id) $reference = 'Purchase #'.$item->purchase_id;
-                                        elseif($item->sale_id) $reference = 'Sale #'.$item->sale_id;
-                                        elseif($item->adjustment_id) $reference = 'Adjustment #'.$item->adjustment_id;
-                                        elseif($item->purchase_return_id) $reference = 'Pur. Return #'.$item->purchase_return_id;
-                                        elseif($item->sales_return_id) $reference = 'Sale Return #'.$item->sales_return_id;
-                                    ?>
+                                    <?php while($item = $history->fetch_object()): ?>
                                     <tr>
                                         <td><?= $item->id ?></td>
                                         <td>
@@ -112,7 +112,15 @@ $history = $mysqli->getConnection()->query($query);
                                         </td>
                                         <td><?= $item->qty ?></td>
                                         <td><?= number_format($item->price, 2) ?></td>
-                                        <td><?= $reference ?></td>
+                                        <td>
+                                            <?php
+                                            if($item->purchase_id) echo "Purchase #".$item->purchase_id;
+                                            elseif($item->sale_id) echo "Sale #".$item->sale_id;
+                                            elseif($item->adjustment_id) echo "Adjustment #".$item->adjustment_id;
+                                            elseif($item->purchase_return_id) echo "Pur. Return #".$item->purchase_return_id;
+                                            elseif($item->sales_return_id) echo "Sale Return #".$item->sales_return_id;
+                                            ?>
+                                        </td>
                                         <td><?= date('d M Y h:i A', strtotime($item->created_at)) ?></td>
                                         <td><?= $item->user_name ?? 'System' ?></td>
                                         <td><?= htmlspecialchars($item->note) ?></td>

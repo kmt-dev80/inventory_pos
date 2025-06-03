@@ -74,9 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Product name is required';
     } elseif (empty($update_data['barcode'])) {
         $error = 'Barcode is required';
-    } elseif ($update_data['sell_price'] < $update_data['price']) {
-        $error = 'Sell price cannot be lower than purchase price';
-    } else {
+    }else {
         // Check if barcode exists (excluding current product)
         $check = $mysqli->common_select('products', 'id', ['barcode' => $update_data['barcode'], 'id!=' => $product_id, 'is_deleted' => 0]);
         if (!$check['error'] && !empty($check['data'])) {
@@ -205,8 +203,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     
                                     <div class="form-group">
                                         <label for="sell_price">Selling Price *</label>
-                                        <input type="number" step="0.01" class="form-control" id="sell_price" name="sell_price" 
-                                               value="<?= htmlspecialchars($product->sell_price) ?>" required>
+                                        <input type="number" step="0.01" class="form-control" name="sell_price" 
+                                               value="<?= htmlspecialchars($product->sell_price) ?>">
                                     </div>
                                 </div>
                             </div>
@@ -221,7 +219,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
         </div>
     </div>
 </div>
-
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
     // Category chain dropdowns
@@ -261,17 +259,5 @@ $(document).ready(function() {
         }
     });
     
-    // Price validation
-    $('#sell_price').blur(function() {
-        var price = parseFloat($('#price').val());
-        var sellPrice = parseFloat($(this).val());
-        
-        if (sellPrice < price) {
-            alert('Selling price cannot be lower than purchase price');
-            $(this).val(price);
-        }
-    });
 });
 </script>
-
-<?php require_once __DIR__ . '/../../requires/footer.php'; ?>

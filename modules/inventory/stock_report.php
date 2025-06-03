@@ -8,20 +8,9 @@ require_once __DIR__ . '/../../db_plugin.php';
 
 $title = "Stock Report";
 
-// Get current stock levels
+// Simplified stock calculation query using direct sum of quantities
 $query = "SELECT p.id, p.name, p.barcode, p.price, p.sell_price, 
-                 COALESCE(SUM(CASE 
-                    WHEN s.change_type = 'purchase' THEN s.qty 
-                    WHEN s.change_type = 'purchase_return' THEN s.qty 
-                    WHEN s.change_type = 'sales_return' THEN s.qty 
-                    WHEN s.change_type = 'adjustment' AND s.qty > 0 THEN s.qty 
-                    ELSE 0 
-                 END), 0) - 
-                 COALESCE(SUM(CASE 
-                    WHEN s.change_type = 'sale' THEN s.qty 
-                    WHEN s.change_type = 'adjustment' AND s.qty < 0 THEN ABS(s.qty) 
-                    ELSE 0 
-                 END), 0) as current_stock
+                 COALESCE(SUM(s.qty), 0) as current_stock
           FROM products p
           LEFT JOIN stock s ON p.id = s.product_id
           WHERE p.is_deleted = 0
@@ -128,7 +117,6 @@ $(document).ready(function() {
         footerCallback: function (row, data, start, end, display) {
             var api = this.api();
             
-            // Remove the formatting to get integer data for summation
             var intVal = function (i) {
                 return typeof i === 'string' ?
                     i.replace(/[\$,]/g, '')*1 :
@@ -136,7 +124,6 @@ $(document).ready(function() {
                         i : 0;
             };
             
-            // Total over all pages
             total = api
                 .column(6, {page: 'current'})
                 .data()
@@ -144,7 +131,6 @@ $(document).ready(function() {
                     return intVal(a) + intVal(b);
                 }, 0);
             
-            // Update footer
             $(api.column(6).footer()).html(
                 '<?= CURRENCY ?>' + total.toFixed(2)
             );

@@ -92,9 +92,4 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 
-<!-- -->
-<script>
-
-</script>
-
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>

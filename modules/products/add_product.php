@@ -50,9 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Product name is required';
     } elseif (empty($product['barcode'])) {
         $error = 'Barcode is required';
-    } elseif ($product['sell_price'] < $product['price']) {
-        $error = 'Sell price cannot be lower than purchase price';
-    } else {
+    }  else {
         // Check if barcode exists
         $check = $mysqli->common_select('products', 'id', ['barcode' => $product['barcode'], 'is_deleted' => 0]);
         if (!$check['error'] && !empty($check['data'])) {
@@ -211,8 +209,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     
                                     <div class="form-group">
                                         <label for="sell_price">Selling Price *</label>
-                                        <input type="number" step="0.01" class="form-control" id="sell_price" name="sell_price" 
-                                               value="<?= htmlspecialchars($product['sell_price']) ?>" required>
+                                        <input type="number" step="0.01" class="form-control" name="sell_price" 
+                                               value="<?= htmlspecialchars($product['sell_price']) ?>">
                                     </div>
                                 </div>
                             </div>

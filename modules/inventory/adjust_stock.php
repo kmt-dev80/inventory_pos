@@ -1,12 +1,10 @@
 <?php
-require_once __DIR__ . '/../includes/db_plugin.php';
-require_once __DIR__ . '/../includes/auth_check.php';
-
-// Check if user has permission to adjust stock
-if($_SESSION['user']->role !== 'admin' && $_SESSION['user']->role !== 'manager' && $_SESSION['user']->role !== 'inventory') {
-    header("Location: stock_report.php");
+session_start();
+if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true) {
+    header("Location: ../../login.php");
     exit();
 }
+require_once __DIR__ . '/../../db_plugin.php'; 
 
 $product_id = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
 
@@ -23,9 +21,6 @@ if($product_id > 0) {
 $products_result = $mysqli->common_select('products', 'id, name, barcode', ['is_deleted' => 0], 'name');
 
 $title = $product ? "Adjust Stock - " . htmlspecialchars($product->name) : "Adjust Stock";
-require_once __DIR__ . '/../includes/header.php';
-require_once __DIR__ . '/../includes/topbar.php';
-require_once __DIR__ . '/../includes/sidebar.php';
 
 // Process form submission
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -83,10 +78,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error_msg = $e->getMessage();
     }
 }
+require_once __DIR__ . '/../../requires/header.php';
+require_once __DIR__ . '/../../requires/topbar.php';
+require_once __DIR__ . '/../../requires/sidebar.php';
 ?>
 
-<div class="main-content">
-    <div class="container-fluid">
+<div class="container">
+    <div class="page-inner">
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col">
@@ -192,7 +190,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 
 <script>
 $(document).ready(function() {
@@ -216,7 +214,7 @@ $(document).ready(function() {
     
     function fetchCurrentStock(productId) {
         $.ajax({
-            url: '<?= BASE_URL ?>ajax/get_stock.php',
+            url: '<?= BASE_URL ?>get_stock.php',
             method: 'GET',
             data: { product_id: productId },
             dataType: 'json',

@@ -1,11 +1,10 @@
 <?php
-require_once __DIR__ . '/../includes/db_plugin.php';
-require_once __DIR__ . '/../includes/auth_check.php';
-
-$title = "Inventory Adjustments";
-require_once __DIR__ . '/../includes/header.php';
-require_once __DIR__ . '/../includes/topbar.php';
-require_once __DIR__ . '/../includes/sidebar.php';
+session_start();
+if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true) {
+    header("Location: ../../login.php");
+    exit();
+}
+require_once __DIR__ . '/../../db_plugin.php'; 
 
 // Get all adjustments with product and user details
 $query = "SELECT a.*, p.name as product_name, u.full_name as user_name 
@@ -13,11 +12,14 @@ $query = "SELECT a.*, p.name as product_name, u.full_name as user_name
           JOIN products p ON a.product_id = p.id
           JOIN users u ON a.user_id = u.id
           ORDER BY a.created_at DESC";
-$adjustments = $mysqli->connect->query($query);
+$adjustments = $mysqli->getConnection()->query($query);
+require_once __DIR__ . '/../../requires/header.php';
+require_once __DIR__ . '/../../requires/topbar.php';
+require_once __DIR__ . '/../../requires/sidebar.php';
 ?>
 
-<div class="main-content">
-    <div class="container-fluid">
+<div class="container">
+    <div class="page-inner">
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col">
@@ -81,7 +83,7 @@ $adjustments = $mysqli->connect->query($query);
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 
 <script>
 $(document).ready(function() {

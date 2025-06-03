@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../../includes/db_plugin.php';
-require_once __DIR__ . '/../../includes/auth_check.php';
 
 header('Content-Type: application/json');
 
@@ -29,7 +28,7 @@ $query = "SELECT COALESCE(SUM(CASE
           WHERE p.id = $product_id
           AND p.is_deleted = 0";
 
-$result = $mysqli->connect->query($query);
+$result = $mysqli->getConnection()->query($query);
 $stock = $result->fetch_object()->current_stock ?? 0;
 
 echo json_encode(['success' => true, 'stock' => $stock]);
