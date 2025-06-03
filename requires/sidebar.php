@@ -221,13 +221,18 @@
           <div class="collapse" id="subnav1">
             <ul class="nav nav-collapse subnav">
               <li>
-                <a href="<?= BASE_URL ?>modules/inventory/stock.php">
+                <a href="<?= BASE_URL ?>modules/inventory/stock_logs.php">
                   <span class="sub-item">View Stock</span>
                 </a>
               </li>
               <li>
-                <a href="#">
-                  <span class="sub-item">Level 2</span>
+                <a href="<?= BASE_URL ?>modules/inventory/stock_report.php">
+                  <span class="sub-item">Stock Report</span>
+                </a>
+              </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/inventory/stock_logs.php">
+                  <span class="sub-item">View Stock</span>
                 </a>
               </li>
             </ul>

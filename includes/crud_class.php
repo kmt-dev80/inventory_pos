@@ -14,6 +14,11 @@ class CRUD {
         $this->connect->set_charset("utf8mb4");
     }
 
+    // Add this getter method
+    public function getConnection() {
+        return $this->connect;
+    }
+
 
     private function buildWhereClause($conditions) {
         if (empty($conditions)) return ['sql' => '', 'params' => []];
