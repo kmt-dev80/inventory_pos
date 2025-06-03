@@ -6,8 +6,6 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php'; 
 
-$title = "Stock Report";
-
 // Simplified stock calculation query using direct sum of quantities
 $query = "SELECT p.id, p.name, p.barcode, p.price, p.sell_price, 
                  COALESCE(SUM(s.qty), 0) as current_stock

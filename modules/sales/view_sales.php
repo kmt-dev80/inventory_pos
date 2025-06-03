@@ -44,6 +44,11 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                 <div class="card">
                     <div class="card-body">
                         <h4 class="card-title">View Sales</h4>
+                             <?php if ($success): ?>
+                                <div class="alert alert-success">
+                                    <?= htmlspecialchars($success) ?>
+                                </div>
+                            <?php endif; ?>
                         
                         <!-- Filter Form -->
                         <form method="GET" class="mb-4">
