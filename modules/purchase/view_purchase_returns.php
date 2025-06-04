@@ -13,11 +13,25 @@ $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
 // Build where conditions
 $where = [];
-$where['purchase_returns.created_at >='] = $start_date;
-$where['purchase_returns.created_at <='] = $end_date;
+$params = [];
+$types = '';
 
-if ($supplier_id) {
-    $where['purchase.supplier_id'] = $supplier_id;
+if (!empty($start_date)) {
+    $where[] = "purchase_returns.created_at >= ?";
+    $params[] = $start_date;
+    $types .= 's';
+}
+
+if (!empty($end_date)) {
+    $where[] = "purchase_returns.created_at <= ?";
+    $params[] = $end_date;
+    $types .= 's';
+}
+
+if (!empty($supplier_id)) {
+    $where[] = "purchase.supplier_id = ?";
+    $params[] = $supplier_id;
+    $types .= 'i';
 }
 
 // Get purchase returns with join to purchase table
@@ -27,33 +41,17 @@ $query = "SELECT purchase_returns.*, purchase.reference_no, purchase.purchase_da
           JOIN suppliers ON purchase.supplier_id = suppliers.id";
 
 if (!empty($where)) {
-    $query .= " WHERE ";
-    $conditions = [];
-    foreach ($where as $key => $value) {
-        $conditions[] = "$key = ?";
-    }
-    $query .= implode(" AND ", $conditions);
+    $query .= " WHERE " . implode(" AND ", $where);
 }
 
 $query .= " ORDER BY purchase_returns.created_at DESC";
 
 // Prepare and execute query
-$stmt = $mysqli->connect->prepare($query);
+$conn = $mysqli->getConnection();
+$stmt = $conn->prepare($query);
 if ($stmt) {
-    if (!empty($where)) {
-        $types = '';
-        $values = [];
-        foreach ($where as $value) {
-            if (is_int($value)) {
-                $types .= 'i';
-            } elseif (is_float($value)) {
-                $types .= 'd';
-            } else {
-                $types .= 's';
-            }
-            $values[] = $value;
-        }
-        $stmt->bind_param($types, ...$values);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
     }
     
     $stmt->execute();
@@ -62,7 +60,7 @@ if ($stmt) {
     $stmt->close();
 } else {
     $returns = [];
-    $_SESSION['error'] = "Error preparing query: " . $mysqli->connect->error;
+    $_SESSION['error'] = "Error preparing query: " . $conn->error;
 }
 
 // Get suppliers for filter dropdown

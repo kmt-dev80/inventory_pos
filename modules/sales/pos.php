@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['print_invoice'] = $sale_id;
             header("Location: print_invoice.php");
         } else {
-            $success = "Sale completed successfully! Invoice #" . $sale_data['invoice_no'];
+            $completed = "Sale completed successfully! Invoice #" . $sale_data['invoice_no'];
             header("Location: view_sales.php");
         }
         exit();

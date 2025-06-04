@@ -46,7 +46,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                         <h4 class="card-title">View Sales</h4>
                              <?php if ($success): ?>
                                 <div class="alert alert-success">
-                                    <?= htmlspecialchars($success) ?>
+                                    <?= htmlspecialchars($completed) ?>
                                 </div>
                             <?php endif; ?>
                         
