@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'product_id' => $product['id'],
                     'user_id' => $_SESSION['user']->id,
                     'change_type' => 'purchase_return',
-                    'qty' => $product['return_qty'],
+                    'qty' => -$product['return_qty'],
                     'price' => $product['price'],
                     'purchase_return_id' => $return_id,
                     'note' => 'Purchase return'

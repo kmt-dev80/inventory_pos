@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../includes/db_plugin.php';
+require_once __DIR__ . '/../../db_plugin.php';
 
 header('Content-Type: application/json');
 
