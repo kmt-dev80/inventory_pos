@@ -1,4 +1,17 @@
 <?php
+function formatBDT(number) {
+    let [intPart, decimalPart] = number.toFixed(2).split('.');
+    let lastThree = intPart.slice(-3);
+    let otherNumbers = intPart.slice(0, -3);
+    
+    if (otherNumbers !== '') {
+        lastThree = ',' + lastThree;
+    }
+    
+    let formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+    return formatted + '.' + decimalPart;
+}
+?>
 /*
 // Generate reference number
 function generateReferenceNo($prefix = '') {
@@ -38,4 +51,3 @@ function checkPermission($requiredPermission) {
         exit;
     }
 }*/
-?>

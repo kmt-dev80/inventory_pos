@@ -129,9 +129,14 @@ $(document).ready(function() {
                     return intVal(a) + intVal(b);
                 }, 0);
             
-            $(api.column(6).footer()).html(
-                '<?= CURRENCY ?>' + total.toFixed(2)
+           $(api.column(6).footer()).html(
+                '<?= CURRENCY ?> ' + new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(total)
             );
+
+
         }
     });
 });

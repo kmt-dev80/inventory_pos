@@ -202,32 +202,56 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     </thead>
                                     <tbody>
                                         <?php foreach ($items as $item): 
-                                            $product = $mysqli->common_select('products', '*', ['id' => $item->product_id])['data'][0] ?? null;
-                                            
-                                            // Get current stock
-                                            $stock_result = $mysqli->common_select('stock', 'SUM(IF(change_type="purchase", qty, -qty)) as available_qty', ['product_id' => $item->product_id]);
-                                            $available_qty = $stock_result['data'][0]->available_qty ?? 0;
-                                        ?>
-                                            <tr>
-                                                <td><?= $product ? $product->name . ' (' . $product->barcode . ')' : 'Product not found' ?></td>
-                                                <td><?= $item->quantity ?></td>
-                                                <td><?= $available_qty ?></td>
-                                                <td>
-                                                    <input type="hidden" name="products[<?= $item->id ?>][id]" value="<?= $item->product_id ?>">
-                                                    <input type="hidden" name="products[<?= $item->id ?>][price]" value="<?= $item->unit_price ?>">
-                                                    <input type="number" class="form-control return-qty" 
-                                                        name="products[<?= $item->id ?>][return_qty]" 
-                                                        min="0" max="<?= min($item->quantity, $available_qty) ?>" 
-                                                        value="0" data-price="<?= $item->unit_price ?>">
-                                                </td>
-                                                <td><?= number_format($item->unit_price, 2) ?></td>
-                                                <td>
-                                                    <input type="text" class="form-control return-total" 
-                                                        name="products[<?= $item->id ?>][return_total]" 
-                                                        value="0.00" readonly>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
+                                        $product = $mysqli->common_select('products', '*', ['id' => $item->product_id])['data'][0] ?? null;
+                                        
+                                        // Get current stock - FINAL CORRECTED VERSION
+                                        $stock_query = "SELECT 
+                                            COALESCE(SUM(
+                                                CASE 
+                                                    WHEN change_type IN ('purchase', 'purchase_return', 'sales_return') THEN qty
+                                                    WHEN change_type = 'adjustment' AND qty > 0 THEN qty
+                                                    ELSE 0
+                                                END
+                                            ), 0) - 
+                                            COALESCE(SUM(
+                                                CASE 
+                                                    WHEN change_type IN ('sale', 'purchase_return') THEN ABS(qty)
+                                                    WHEN change_type = 'adjustment' AND qty < 0 THEN ABS(qty)
+                                                    ELSE 0
+                                                END
+                                            ), 0) as available_qty
+                                        FROM stock 
+                                        WHERE product_id = ?";
+                                        
+                                        $stmt = $mysqli->getConnection()->prepare($stock_query);
+                                        $stmt->bind_param('i', $item->product_id);
+                                        $stmt->execute();
+                                        $stock_result = $stmt->get_result();
+                                        $available_qty = $stock_result->fetch_object()->available_qty ?? 0;
+                                        
+                                        // Debug output (remove after verification)
+                                       // echo " {$item->product_id}, Purchased: {$item->quantity}, Available: $available_qty";
+                                    ?>
+                                        <tr>
+                                            <td><?= $product ? $product->name . ' (' . $product->barcode . ')' : 'Product not found' ?></td>
+                                            <td><?= $item->quantity ?></td>
+                                            <td><?= $available_qty ?></td>
+                                            <td>
+                                                <input type="hidden" name="products[<?= $item->id ?>][id]" value="<?= $item->product_id ?>">
+                                                <input type="hidden" name="products[<?= $item->id ?>][price]" value="<?= $item->unit_price ?>">
+                                                <input type="number" class="form-control return-qty" 
+                                                    name="products[<?= $item->id ?>][return_qty]" 
+                                                    min="0" max="<?= min($item->quantity, $available_qty) ?>" 
+                                                    value="0" data-price="<?= $item->unit_price ?>">
+                                            </td>
+                                            <td><?= number_format($item->unit_price, 2) ?></td>
+                                            <td>
+                                                <input type="text" class="form-control return-total" 
+                                                    name="products[<?= $item->id ?>][return_total]" 
+                                                    value="0.00" readonly>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
                                     </tbody>
                                     <tfoot>
                                         <tr>
@@ -247,7 +271,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
         </div>
     </div>
 </div>
-
+<?php include __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
     // Calculate return totals when quantity changes
@@ -269,5 +293,3 @@ $(document).ready(function() {
     }
 });
 </script>
-
-<?php include __DIR__ . '/../../requires/footer.php'; ?>
