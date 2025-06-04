@@ -215,7 +215,6 @@ require_once __DIR__ . '/requires/topbar.php';
 require_once __DIR__ . '/requires/sidebar.php';
 
 ?>
-<!-- Add this to your CSS -->
 <style>
     /* Gradient Cards */
     .card-gradient {

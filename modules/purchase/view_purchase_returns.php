@@ -57,12 +57,12 @@ if ($stmt) {
     $stmt->execute();
     $result = $stmt->get_result();
     $returns = $result->fetch_all(MYSQLI_ASSOC);
+    echo "$returns";
     $stmt->close();
 } else {
     $returns = [];
     $_SESSION['error'] = "Error preparing query: " . $conn->error;
 }
-
 // Get suppliers for filter dropdown
 $suppliers = $mysqli->common_select('suppliers')['data'];
 
