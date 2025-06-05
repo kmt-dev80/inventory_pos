@@ -78,7 +78,7 @@ class CRUD {
         return $refs;
     }
 
-    public function common_select($table, $fields = '*', $where = false, $sort = 'id', $sort_type = 'asc', $offset = false, $limit = false) {
+    public function common_select($table, $fields = '*', $where = false, $sort = 'id', $sort_type = 'asc', $offset = false, $limit = false,  $joins = []) {
         $data = [];
         $error = 0;
         $error_msg = "";
@@ -104,11 +104,23 @@ class CRUD {
         }
 
         if ($sort) {
-            if (!preg_match('/^[a-zA-Z0-9_]+$/', $sort)) {
-                return ['data' => [], 'error' => 1, 'error_msg' => "Invalid sort column"];
-            }
-            $sql .= " ORDER BY `$sort` " . (strtoupper($sort_type) === 'DESC' ? 'DESC' : 'ASC');
+        // Allow for "column DESC" or "column ASC" syntax
+        $sort_parts = preg_split('/\s+/', trim($sort));
+        $sort_column = $sort_parts[0];
+        
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $sort_column)) {
+            return ['data' => [], 'error' => 1, 'error_msg' => "Invalid sort column"];
         }
+        
+        $sql .= " ORDER BY `$sort_column`";
+        
+        // Add direction if specified
+        if (count($sort_parts) > 1 && in_array(strtoupper($sort_parts[1]), ['ASC', 'DESC'])) {
+            $sql .= ' ' . strtoupper($sort_parts[1]);
+        } elseif ($sort_type) {
+            $sql .= ' ' . (strtoupper($sort_type) === 'DESC' ? 'DESC' : 'ASC');
+        }
+    }
 
         if ($limit !== false) {
             $limit = (int)$limit;

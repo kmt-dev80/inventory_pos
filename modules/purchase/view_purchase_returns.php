@@ -4,7 +4,7 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     header("Location: ../../login.php");
     exit();
 }
-require_once __DIR__ . '/../../db_plugin.php'; 
+require_once __DIR__ . '/../../db_plugin.php';
 
 // Get filter parameters
 $supplier_id = $_GET['supplier_id'] ?? '';
@@ -18,13 +18,13 @@ $types = '';
 
 if (!empty($start_date)) {
     $where[] = "purchase_returns.created_at >= ?";
-    $params[] = $start_date;
+    $params[] = $start_date . ' 00:00:00'; // Include time for accurate comparison
     $types .= 's';
 }
 
 if (!empty($end_date)) {
     $where[] = "purchase_returns.created_at <= ?";
-    $params[] = $end_date;
+    $params[] = $end_date . ' 23:59:59';
     $types .= 's';
 }
 
@@ -49,20 +49,25 @@ $query .= " ORDER BY purchase_returns.created_at DESC";
 // Prepare and execute query
 $conn = $mysqli->getConnection();
 $stmt = $conn->prepare($query);
+
 if ($stmt) {
     if (!empty($params)) {
         $stmt->bind_param($types, ...$params);
     }
     
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $returns = $result->fetch_all(MYSQLI_ASSOC);
-    echo "$returns";
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $returns = $result->fetch_all(MYSQLI_ASSOC);
+    } else {
+        $returns = [];
+        $_SESSION['error'] = "Error executing query: " . $stmt->error;
+    }
     $stmt->close();
 } else {
     $returns = [];
     $_SESSION['error'] = "Error preparing query: " . $conn->error;
 }
+
 // Get suppliers for filter dropdown
 $suppliers = $mysqli->common_select('suppliers')['data'];
 
@@ -138,7 +143,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <td><?= number_format($return['refund_amount'], 2) ?></td>
                                             <td><?= ucfirst($return['refund_method']) ?></td>
                                             <td>
-                                                <a href="return_details.php?id=<?= $return['id'] ?>" class="btn btn-info btn-sm">View</a>
+                                                <a href="view_return_details.php?id=<?= $return['id'] ?>" class="btn btn-info btn-sm">View</a>
                                                 <?php if ($_SESSION['user']->role == 'admin'): ?>
                                                     <a href="delete_return.php?id=<?= $return['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
                                                 <?php endif; ?>

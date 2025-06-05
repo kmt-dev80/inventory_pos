@@ -26,9 +26,7 @@ if ($status) {
 }
 
 // Get sales
-//$sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data'];
-$sales = $mysqli->common_select('sales', '*', [])['data'];
-
+$sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data'];
 // Get customers for filter dropdown
 $customers = $mysqli->common_select('customers')['data'];
 
@@ -36,7 +34,6 @@ require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
 ?>
-
 <div class="container">
     <div class="page-inner">
         <div class="row">
@@ -88,7 +85,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     <button type="submit" class="btn btn-primary">Filter</button>
                                     <a href="view_sales.php" class="btn btn-secondary">Reset</a>
                                     <a href="pos.php" class="btn btn-success">New POS Sale</a>
-                                    <a href="add_sale.php" class="btn btn-info">Add Manual Sale</a>
                                 </div>
                             </div>
                         </form>
