@@ -26,8 +26,8 @@ if ($payment_status) {
 }
 
 // Get sales data
-//$sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data'];
-$sales = $mysqli->common_select('sales', '*', [])['data'];
+$sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data'];
+//$sales = $mysqli->common_select('sales', '*', [])['data'];
 
 // Get customers for filter dropdown
 $customers = $mysqli->common_select('customers')['data'];

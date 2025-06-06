@@ -222,7 +222,7 @@
             <ul class="nav nav-collapse subnav">
               <li>
                 <a href="<?= BASE_URL ?>modules/inventory/stock_logs.php">
-                  <span class="sub-item">View Stock</span>
+                  <span class="sub-item">View Logs</span>
                 </a>
               </li>
               <li>

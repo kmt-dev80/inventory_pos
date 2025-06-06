@@ -1,4 +1,4 @@
-<?php
+<?php/*
 function formatBDT(number) {
     let [intPart, decimalPart] = number.toFixed(2).split('.');
     let lastThree = intPart.slice(-3);
@@ -11,8 +11,8 @@ function formatBDT(number) {
     let formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
     return formatted + '.' + decimalPart;
 }
-?>
-/*
+
+
 // Generate reference number
 function generateReferenceNo($prefix = '') {
     return $prefix . strtoupper(uniqid());
@@ -51,3 +51,4 @@ function checkPermission($requiredPermission) {
         exit;
     }
 }*/
+?>

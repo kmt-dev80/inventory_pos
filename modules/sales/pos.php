@@ -196,7 +196,6 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
     margin-bottom: 20px;
 }
 </style>
-
 <div class="container">
     <div class="page-inner">
         <div class="row">

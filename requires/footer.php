@@ -223,6 +223,7 @@
 </div>-->
 <!--   Core JS Files   -->
 <script src="<?= BASE_URL ?>assets/js/core/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="<?= BASE_URL ?>assets/js/products.js"></script>
 <script src="<?= BASE_URL ?>assets/js/core/popper.min.js"></script>
 <script src="<?= BASE_URL ?>assets/js/core/bootstrap.min.js"></script>
