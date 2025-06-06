@@ -28,7 +28,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                 <div class="col">
                     <h3 class="page-title">Stock Report</h3>
                     <ul class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>dashboard.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/inventory/stock_logs.php">View Logs</a></li>
                         <li class="breadcrumb-item active">Stock Report</li>
                     </ul>
                 </div>
@@ -108,9 +109,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 <script>
 $(document).ready(function() {
     $('#stockReportTable').DataTable({
-        dom: 'Bfrtip',
+        dom: 'lBfrtip',
         buttons: [
-            'copy', 'csv', 'excel', 'pdf', 'print'
+            'csv', 'excel', 'pdf', 'print'
         ],
         footerCallback: function (row, data, start, end, display) {
             var api = this.api();

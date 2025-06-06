@@ -19,7 +19,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                 <div class="col">
                     <h3 class="page-title">Stock Logs</h3>
                     <ul class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>dashboard.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/inventory/stock_report.php">Stock Report</a></li>
                         <li class="breadcrumb-item active">Stock Logs</li>
                     </ul>
                 </div>
@@ -108,11 +109,3 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 </div>
 
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
-
-<script>
-$(document).ready(function() {
-    $('#stockTable').DataTable({
-        order: [[6, 'desc']]
-    });
-});
-</script>

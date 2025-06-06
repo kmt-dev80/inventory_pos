@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/db_plugin.php';
  // Redirect if already logged in
 if (isset($_SESSION['log_user_status']) && $_SESSION['log_user_status'] === true) {
-    header("Location: dashboard.php");
+    header("Location: index.php");
     exit();
 }
 
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'status' => 'success'
                         ]);
                         
-                        header("Location: dashboard.php");
+                        header("Location: index.php");
                         exit();
                     }
                 } else {
@@ -105,9 +105,137 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In</title>
-    <link rel="stylesheet" href="assets/css/new_css.css">
+<style>
+body{
+  display: grid;
+  justify-content: center;
+  background-color: #212121;
+  background-image: url('assets/img/asd.jpg'); background-size: cover;
+}
+
+.container {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.container span {
+  position: absolute;
+  left: 0;
+  width: 32px;
+  height: 6px;
+  background: #2c4766;
+  border-radius: 80px;
+  transform-origin: 200px;
+  transform: rotate(calc(var(--i) * (360deg / 50)));
+  animation: blink 3s linear infinite;
+  animation-delay: calc(var(--i) * (3s / 50));
+}
+
+@keyframes blink {
+  0% {
+    background: #0ef;
+  }
+  25% {
+    background: #2c4766;
+  }
+}
+
+.login-box {
+  position: absolute;
+  width: 80%;
+  max-width: 300px;
+  z-index: 1;
+  padding: 20px;
+  border-radius: 20px;
+}
+
+form {
+  width: 100%;
+  padding: 0 10px;
+}
+
+h2 {
+  font-size: 1.8em;
+  color: #0ef;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.input-box {
+  position: relative;
+  margin: 15px 0;
+}
+
+input {
+  width: 100%;
+  height: 45px;
+  background: transparent;
+  border: 2px solid #2c4766;
+  outline: none;
+  border-radius: 40px;
+  font-size: 1em;
+  color: #fff;
+  padding: 0 15px;
+  transition: 0.5s ease;
+}
+
+input:focus {
+  border-color: #0ef;
+}
+
+input[value]:not([value=""]) ~ label,
+input:focus ~ label {
+  top: -10px;
+  font-size: 0.8em;
+  background: #1f293a;
+  padding: 0 6px;
+  color: #0ef;
+}
+
+label {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+  font-size: 1em;
+  pointer-events: none;
+  transition: 0.5s ease;
+  color: #fff;
+}
+
+.forgot-pass {
+  margin: -10px 0 10px;
+  text-align: center;
+}
+
+.forgot-pass a {
+  font-size: 0.85em;
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn {
+  width: 100%;
+  height: 45px;
+  background: #0ef;
+  border: none;
+  outline: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #1f293a;
+  font-weight: 600;
+}
+
+</style>   
 </head>
-<body style="background-image: url('assets/img/asd.jpg'); background-size: cover;">
+<body>
 
 <div class="container">
   <div class="login-box">

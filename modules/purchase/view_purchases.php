@@ -26,10 +26,8 @@ if ($status && $status !='') {
     $where['payment_status'] = $status;
 }
 
-// Get purchases with the new CRUD class
 $purchases_result = $mysqli->common_select('purchase', '*', $where, 'purchase_date','DESC');
 
-//$purchases_result = $mysqli->common_select('purchase', '*', []);
 if ($purchases_result['error']) {
     // Log error and show empty results
     error_log("Purchase query error: " . $purchases_result['error_msg']);
@@ -162,15 +160,3 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 </div>
 
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
-
-<script>
-$(document).ready(function() {
-    $('#purchasesTable').DataTable({
-        "order": [[1, "desc"]],
-        "responsive": true,
-        "columnDefs": [
-            { "orderable": false, "targets": [6] } // Disable sorting on actions column
-        ]
-    });
-});
-</script>

@@ -3,7 +3,7 @@
     <div class="main-header-logo">
       <!-- Logo Header -->
       <div class="logo-header" data-background-color="dark">
-        <a href="dashboard.php" class="logo">
+        <a href="index.php" class="logo">
           <img
             src="<?= BASE_URL ?>assets/img/kaiadmin/logo_light.svg"
             alt="navbar brand"
@@ -318,10 +318,10 @@
                       />
                     </div>
                     <div class="u-text">
-                      <h4>Hizrian</h4>
+                      <h4>Kmt Hasan</h4>
                       <p class="text-muted">hello@example.com</p>
                       <a
-                        href="profile.html"
+                        href="#"
                         class="btn btn-xs btn-secondary btn-sm"
                         >View Profile</a
                       >

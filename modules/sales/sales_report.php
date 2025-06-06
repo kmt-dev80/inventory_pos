@@ -27,7 +27,6 @@ if ($payment_status) {
 
 // Get sales data
 $sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data'];
-//$sales = $mysqli->common_select('sales', '*', [])['data'];
 
 // Get customers for filter dropdown
 $customers = $mysqli->common_select('customers')['data'];
@@ -111,7 +110,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 <div class="col-md-3 align-self-end">
                                     <button type="submit" class="btn btn-primary">Filter</button>
                                     <a href="sales_report.php" class="btn btn-secondary">Reset</a>
-                                    <button type="button" id="exportBtn" class="btn btn-success">Export to Excel</button>
                                 </div>
                             </div>
                         </form>
@@ -146,7 +144,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                         
                         <!-- Sales Table -->
                         <div class="table-responsive">
-                            <table class="table table-striped" id="salesTable">
+                            <table class="table table-striped" id="salesReport">
                                 <thead>
                                     <tr>
                                         <th>Invoice No</th>
@@ -208,32 +206,3 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
-<script>
-$(document).ready(function() {
-    $('#salesTable').DataTable({
-        "order": [[1, "desc"]],
-        "dom": 'Bfrtip',
-        "buttons": [
-            {
-                extend: 'excel',
-                text: 'Export to Excel',
-                title: 'Sales Report <?= date('Y-m-d') ?>',
-                customize: function(xlsx) {
-                    var sheet = xlsx.xl.worksheets['sheet1.xml'];
-                    
-                    // Add summary row
-                    $('row:last c', sheet).attr('r', '1');
-                    $('row:last c', sheet).after('<c r="A1" t="inlineStr"><is><t>Total Sales</t></is></c><c r="B1"><v><?= $total_sales ?></v></c>');
-                    $('row:last c', sheet).after('<c r="A2" t="inlineStr"><is><t>Total Paid</t></is></c><c r="B2"><v><?= $total_paid ?></v></c>');
-                    $('row:last c', sheet).after('<c r="A3" t="inlineStr"><is><t>Total Due</t></is></c><c r="B3"><v><?= $total_due ?></v></c>');
-                }
-            }
-        ]
-    });
-    
-    // Manual export button (for better mobile compatibility)
-    $('#exportBtn').click(function() {
-        $('.buttons-excel').click();
-    });
-});
-</script>

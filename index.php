@@ -978,7 +978,7 @@ $(document).ready(function() {
     
     // Function to refresh chart data
     function refreshChart() {
-        // You can implement AJAX call here to refresh chart data
+        // implement AJAX call here to refresh chart data
         console.log("Refreshing chart data...");
         // For now, just reload the page
         location.reload();

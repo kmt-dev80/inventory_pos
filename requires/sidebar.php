@@ -2,7 +2,7 @@
   <div class="sidebar-logo">
     <!-- Logo Header -->
     <div class="logo-header" data-background-color="dark">
-      <a href="<?= BASE_URL ?>dashboard.php" class="logo">
+      <a href="<?= BASE_URL ?>index.php" class="logo">
         <img
           src="<?= BASE_URL ?>assets/img/kaiadmin/logo_light.svg"
           alt="navbar brand"
@@ -30,7 +30,7 @@
         <li class="nav-item active">
           <a
             data-bs-toggle="collapse"
-            href="<?= BASE_URL ?>dashboard.php"
+            href="<?= BASE_URL ?>index.php"
             class="collapsed"
             aria-expanded="false"
           >

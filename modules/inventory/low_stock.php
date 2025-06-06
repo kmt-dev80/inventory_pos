@@ -65,7 +65,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                 <div class="col">
                     <h3 class="page-title">Low Stock Alerts</h3>
                     <ul class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>dashboard.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
                         <li class="breadcrumb-item"><a href="stock_report.php">Inventory</a></li>
                         <li class="breadcrumb-item active">Low Stock</li>
                     </ul>

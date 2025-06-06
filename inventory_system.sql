@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 04, 2025 at 08:10 AM
+-- Generation Time: Jun 06, 2025 at 06:21 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -43,7 +43,8 @@ CREATE TABLE `brand` (
 
 INSERT INTO `brand` (`id`, `brand_name`, `details`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
 (1, 'Oneplus', 'All Oneplus Device', 0, NULL, '2025-06-01 10:30:03', '2025-06-01 10:30:11'),
-(2, 'Samsung', 'All Products', 0, NULL, '2025-06-01 16:57:52', '2025-06-01 16:57:52');
+(2, 'Samsung', 'All Products', 0, NULL, '2025-06-01 16:57:52', '2025-06-01 16:57:52'),
+(3, 'realme', 'All realme phones', 0, NULL, '2025-06-06 11:22:19', '2025-06-06 11:22:34');
 
 -- --------------------------------------------------------
 
@@ -151,8 +152,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `barcode`, `category_id`, `sub_category_id`, `child_category_id`, `brand_id`, `price`, `sell_price`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(6, 'Oneplus 13', '4534535445', 1, 1, 1, 1, 40000.00, 45000.00, 0, NULL, '2025-06-03 05:07:41', '2025-06-03 05:08:57'),
-(7, 'Oneplus 10', '4534535485', 1, 1, 1, 1, 35000.00, 40000.00, 0, NULL, '2025-06-03 05:10:01', '2025-06-03 05:10:01');
+(4, 'Onelplus Nord  200 5G', '12345678910', 1, 1, 1, 1, 14000.00, 15000.00, 0, NULL, '2025-06-04 12:10:45', '2025-06-04 12:10:45'),
+(5, 'Oneplus Nord 3', '45334662626', 1, 1, 1, 1, 25000.00, 28000.00, 0, NULL, '2025-06-04 12:11:28', '2025-06-04 12:11:28');
 
 -- --------------------------------------------------------
 
@@ -183,8 +184,8 @@ CREATE TABLE `purchase` (
 --
 
 INSERT INTO `purchase` (`id`, `supplier_id`, `reference_no`, `purchase_date`, `payment_method`, `payment_status`, `discount`, `subtotal`, `vat`, `total`, `user_id`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(11, 3, 'PUR-683E8443A23AD', '2025-06-03', 'cash', 'paid', 80000.00, 800000.00, 108000.00, 828000.00, 1, 0, NULL, '2025-06-03 05:12:35', '2025-06-04 04:56:32'),
-(12, 4, 'PUR-683E849963067', '2025-06-03', 'cash', 'partial', 70000.00, 700000.00, 94500.00, 724500.00, 1, 0, NULL, '2025-06-03 05:14:01', '2025-06-03 05:14:01');
+(10, 3, 'PUR-68403844132B1', '2025-06-04', 'bank_transfer', 'paid', 14000.00, 280000.00, 26600.00, 292600.00, 1, 0, NULL, '2025-06-04 12:12:52', '2025-06-04 12:14:29'),
+(11, 2, 'PUR-6840387753C33', '2025-06-04', 'cash', 'paid', 35000.00, 500000.00, 46500.00, 511500.00, 1, 0, NULL, '2025-06-04 12:13:43', '2025-06-04 12:15:10');
 
 -- --------------------------------------------------------
 
@@ -210,8 +211,8 @@ CREATE TABLE `purchase_items` (
 --
 
 INSERT INTO `purchase_items` (`id`, `purchase_id`, `product_id`, `quantity`, `unit_price`, `discount`, `subtotal`, `vat`, `total_price`, `created_at`) VALUES
-(12, 11, 6, 20, 40000.00, 10.00, 0.00, 15.00, 828000.00, '2025-06-03 05:12:35'),
-(13, 12, 7, 20, 35000.00, 10.00, 0.00, 15.00, 724500.00, '2025-06-03 05:14:01');
+(11, 10, 4, 20, 14000.00, 5.00, 0.00, 10.00, 292600.00, '2025-06-04 12:12:52'),
+(12, 11, 5, 20, 25000.00, 7.00, 0.00, 10.00, 511500.00, '2025-06-04 12:13:43');
 
 -- --------------------------------------------------------
 
@@ -236,10 +237,11 @@ CREATE TABLE `purchase_payment` (
 --
 
 INSERT INTO `purchase_payment` (`id`, `supplier_id`, `purchase_id`, `purchase_return_id`, `type`, `amount`, `payment_method`, `description`, `created_at`) VALUES
-(4, 4, 12, NULL, 'payment', 100000.00, 'cash', NULL, '2025-06-03 05:14:01'),
-(5, 3, 11, NULL, 'payment', 400000.00, 'card', '', '2025-06-03 07:26:09'),
-(7, 3, 11, NULL, 'payment', 428000.00, 'cash', '', '2025-06-04 04:56:32'),
-(8, 3, 11, 2, 'return', 40000.00, 'cash', 'Refund for purchase return #PUR-683E8443A23AD', '2025-06-04 06:05:48');
+(7, 3, 10, NULL, 'payment', 292600.00, 'cash', 'All Given', '2025-06-04 12:14:29'),
+(8, 2, 11, NULL, 'payment', 511500.00, 'cash', 'All Given', '2025-06-04 12:15:10'),
+(9, 3, 10, 2, 'return', 14000.00, 'cash', 'Refund for purchase return #PUR-68403844132B1', '2025-06-04 12:40:29'),
+(11, 3, 10, 4, 'return', 14000.00, 'cash', 'Refund for purchase return #PUR-68403844132B1', '2025-06-04 14:31:32'),
+(12, 3, 10, 5, 'return', 14000.00, 'cash', 'Refund for purchase return #PUR-68403844132B1', '2025-06-04 14:49:49');
 
 -- --------------------------------------------------------
 
@@ -266,7 +268,9 @@ CREATE TABLE `purchase_returns` (
 --
 
 INSERT INTO `purchase_returns` (`id`, `purchase_id`, `return_reason`, `return_note`, `refund_amount`, `refund_method`, `user_id`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(2, 11, 'wrong_item', '', 40000.00, 'cash', 1, 0, NULL, '2025-06-04 06:05:47', '2025-06-04 06:05:47');
+(2, 10, 'wrong_item', 'Display Issue', 14000.00, 'cash', 1, 0, NULL, '2025-06-04 12:40:29', '2025-06-04 12:40:29'),
+(4, 10, 'defective', '', 14000.00, 'cash', 1, 0, NULL, '2025-06-04 14:31:32', '2025-06-04 14:31:32'),
+(5, 10, 'defective', '', 14000.00, 'cash', 1, 0, NULL, '2025-06-04 14:49:49', '2025-06-04 14:49:49');
 
 -- --------------------------------------------------------
 
@@ -289,7 +293,9 @@ CREATE TABLE `purchase_return_items` (
 --
 
 INSERT INTO `purchase_return_items` (`id`, `purchase_return_id`, `product_id`, `quantity`, `unit_price`, `total_price`, `created_at`) VALUES
-(2, 2, 6, 1, 40000.00, 40000.00, '2025-06-04 06:05:48');
+(1, 2, 4, 1, 14000.00, 14000.00, '2025-06-04 12:40:29'),
+(3, 4, 4, 1, 14000.00, 14000.00, '2025-06-04 14:31:32'),
+(4, 5, 4, 1, 14000.00, 14000.00, '2025-06-04 14:49:49');
 
 -- --------------------------------------------------------
 
@@ -320,7 +326,7 @@ CREATE TABLE `sales` (
 --
 
 INSERT INTO `sales` (`id`, `customer_id`, `customer_name`, `customer_email`, `invoice_no`, `discount`, `subtotal`, `vat`, `total`, `payment_status`, `user_id`, `is_deleted`, `deleted_at`, `created_at`, `updated_at`) VALUES
-(7, NULL, NULL, NULL, 'INV-683E8564A2BEF', 900.00, 45000.00, 0.00, 44100.00, 'paid', 1, 0, NULL, '2025-06-03 05:17:24', '2025-06-03 05:18:42');
+(12, NULL, 'Walk-in Customer', 'kmthasan1715@gmail.com', 'INV-684039505039B', 450.00, 15000.00, 0.00, 14550.00, 'paid', 1, 0, NULL, '2025-06-04 12:17:20', '2025-06-04 12:17:20');
 
 -- --------------------------------------------------------
 
@@ -345,7 +351,7 @@ CREATE TABLE `sales_payment` (
 --
 
 INSERT INTO `sales_payment` (`id`, `customer_id`, `sales_id`, `sales_return_id`, `type`, `amount`, `payment_method`, `description`, `created_at`) VALUES
-(5, NULL, 7, NULL, 'payment', 44100.00, 'cash', '', '2025-06-03 05:18:42');
+(10, NULL, 12, NULL, 'payment', 14550.00, 'cash', 'Payment for invoice #INV-684039505039B', '2025-06-04 12:17:20');
 
 -- --------------------------------------------------------
 
@@ -404,7 +410,7 @@ CREATE TABLE `sale_items` (
 --
 
 INSERT INTO `sale_items` (`id`, `sale_id`, `product_id`, `quantity`, `unit_price`, `total_price`, `created_at`) VALUES
-(4, 7, 6, 1, 45000.00, 45000.00, '2025-06-03 05:17:24');
+(8, 12, 4, 1, 15000.00, 15000.00, '2025-06-04 12:17:20');
 
 -- --------------------------------------------------------
 
@@ -431,9 +437,21 @@ INSERT INTO `security_logs` (`id`, `user_id`, `ip_address`, `action`, `details`,
 (2, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-01 11:52:54'),
 (3, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-01 12:56:21'),
 (4, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-02 01:25:19'),
-(5, 1, '::1', 'login', 'Successful login', 'success', '2025-06-02 03:07:40'),
-(6, 1, '::1', 'login', 'Successful login', 'success', '2025-06-03 03:00:23'),
-(7, 1, '::1', 'login', 'Successful login', 'success', '2025-06-04 02:56:58');
+(5, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-02 10:37:55'),
+(6, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-02 11:39:02'),
+(7, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-02 13:32:01'),
+(8, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-03 01:21:27'),
+(9, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-03 09:30:30'),
+(10, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-03 14:01:45'),
+(11, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-03 15:41:12'),
+(12, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-04 00:56:47'),
+(13, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-04 11:51:02'),
+(14, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-05 00:05:38'),
+(15, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-06 02:27:31'),
+(16, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-06 02:43:05'),
+(17, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-06 03:53:04'),
+(18, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-06 11:18:10'),
+(19, 1, '127.0.0.1', 'login', 'Successful login', 'success', '2025-06-06 13:27:53');
 
 -- --------------------------------------------------------
 
@@ -462,10 +480,12 @@ CREATE TABLE `stock` (
 --
 
 INSERT INTO `stock` (`id`, `product_id`, `user_id`, `change_type`, `qty`, `price`, `purchase_id`, `sale_id`, `adjustment_id`, `purchase_return_id`, `sales_return_id`, `note`, `created_at`) VALUES
-(17, 6, 1, 'purchase', 20, 40000.00, 11, NULL, NULL, NULL, NULL, 'Purchase added', '2025-06-03 05:12:35'),
-(18, 7, 1, 'purchase', 20, 35000.00, 12, NULL, NULL, NULL, NULL, 'Purchase added', '2025-06-03 05:14:01'),
-(19, 6, 1, 'sale', -1, 45000.00, NULL, 7, NULL, NULL, NULL, 'POS sale', '2025-06-03 05:17:24'),
-(22, 6, 1, 'purchase_return', 1, 40000.00, NULL, NULL, NULL, 2, NULL, 'Purchase return', '2025-06-04 06:05:48');
+(21, 4, 1, 'purchase', 20, 14000.00, 10, NULL, NULL, NULL, NULL, 'Purchase added', '2025-06-04 12:12:52'),
+(22, 5, 1, 'purchase', 20, 25000.00, 11, NULL, NULL, NULL, NULL, 'Purchase added', '2025-06-04 12:13:43'),
+(23, 4, 1, 'sale', -1, 15000.00, NULL, 12, NULL, NULL, NULL, 'POS sale', '2025-06-04 12:17:20'),
+(24, 4, 1, 'purchase_return', -1, 14000.00, NULL, NULL, NULL, 2, NULL, 'Purchase return', '2025-06-04 12:40:29'),
+(26, 4, 1, 'purchase_return', -1, 14000.00, NULL, NULL, NULL, 4, NULL, 'Purchase return', '2025-06-04 14:31:32'),
+(27, 4, 1, 'purchase_return', -1, 14000.00, NULL, NULL, NULL, 5, NULL, 'Purchase return', '2025-06-04 14:49:49');
 
 -- --------------------------------------------------------
 
@@ -513,8 +533,8 @@ CREATE TABLE `suppliers` (
 --
 
 INSERT INTO `suppliers` (`id`, `name`, `phone`, `email`, `address`, `company_name`, `created_at`, `updated_at`) VALUES
-(3, 'Imtiaz Ahmed', '01316622688', 'admeein@example.com', 'Baherdderhat', 'IMTU', '2025-06-03 05:11:07', '2025-06-03 05:11:07'),
-(4, 'Md Hasan', '01319028685', 'mdtarelhasab@gmail.com', 'Khashkhama', 'RFL', '2025-06-03 05:11:38', '2025-06-03 05:11:38');
+(2, 'MD. Amran', '01319028685', 'admeein@example.com', 'Baherdderhat, Chittagong', 'Jamuna', '2025-06-01 16:59:24', '2025-06-01 16:59:24'),
+(3, 'Md Jaber', '01319028682', 'admin2@example.com', 'Baherdderhat', 'Toptech', '2025-06-02 13:04:10', '2025-06-02 13:04:10');
 
 -- --------------------------------------------------------
 
@@ -574,7 +594,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `profile_pic`, `username`, `password`, `full_name`, `email`, `role`, `is_active`, `last_login`, `last_login_ip`, `login_attempts`, `locked_until`, `reset_token`, `reset_token_expires`, `email_verified`, `verification_token`, `password_changed_at`, `created_at`, `updated_at`, `is_deleted`, `deleted_at`) VALUES
-(1, NULL, 'admin123', '$2y$10$1zK282mpn4mIFuh61g0nmeOt74.ZBP3PLuAdZaMLkTKp8ZptsUqfW', 'Takiul Hasan', 'mdtakiulhasan@gmail.com', 'admin', 1, '2025-06-04 08:56:58', '::1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-06-01 10:27:06', '2025-06-04 02:56:58', 0, NULL);
+(1, NULL, 'admin123', '$2y$10$1zK282mpn4mIFuh61g0nmeOt74.ZBP3PLuAdZaMLkTKp8ZptsUqfW', 'Takiul Hasan', 'mdtakiulhasan@gmail.com', 'admin', 1, '2025-06-06 19:27:53', '127.0.0.1', 0, NULL, NULL, NULL, 0, NULL, NULL, '2025-06-01 10:27:06', '2025-06-06 13:27:53', 0, NULL);
 
 --
 -- Indexes for dumped tables
@@ -766,7 +786,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `brand`
 --
 ALTER TABLE `brand`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -790,55 +810,55 @@ ALTER TABLE `customers`
 -- AUTO_INCREMENT for table `inventory_adjustments`
 --
 ALTER TABLE `inventory_adjustments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `purchase`
 --
 ALTER TABLE `purchase`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `purchase_items`
 --
 ALTER TABLE `purchase_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `purchase_payment`
 --
 ALTER TABLE `purchase_payment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `purchase_returns`
 --
 ALTER TABLE `purchase_returns`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `purchase_return_items`
 --
 ALTER TABLE `purchase_return_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `sales_payment`
 --
 ALTER TABLE `sales_payment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `sales_returns`
@@ -856,19 +876,19 @@ ALTER TABLE `sales_return_items`
 -- AUTO_INCREMENT for table `sale_items`
 --
 ALTER TABLE `sale_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `security_logs`
 --
 ALTER TABLE `security_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `stock`
 --
 ALTER TABLE `stock`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `sub_category`
@@ -880,7 +900,7 @@ ALTER TABLE `sub_category`
 -- AUTO_INCREMENT for table `suppliers`
 --
 ALTER TABLE `suppliers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `system_logs`
