@@ -11,10 +11,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $mysqli->begin_transaction();
     
     try {
+        // Handle customer creation/selection
+        $customer_id = null;
+        if (!empty($_POST['customer_name'])) {
+            // Check if customer exists
+            $customer_result = $mysqli->common_select('customers', 'id', ['name' => $_POST['customer_name']]);
+            
+            if ($customer_result['error'] || empty($customer_result['data'])) {
+                // Create new customer if not exists
+                $new_customer = [
+                    'name' => $_POST['customer_name'],
+                    'phone' => $_POST['customer_phone'] ?? null,
+                    'email' => $_POST['customer_email'] ?? null
+                ];
+                
+                $customer_result = $mysqli->common_insert('customers', $new_customer);
+                if ($customer_result['error']) throw new Exception("Failed to create customer: " . $customer_result['error_msg']);
+                
+                $customer_id = $customer_result['data'];
+            } else {
+                $customer_id = $customer_result['data'][0]->id;
+            }
+        }
+
         // Create sale record
         $sale_data = [
+            'customer_id' => $customer_id,
             'customer_name' => $_POST['customer_name'] ?: null,
             'customer_email' => $_POST['customer_email'] ?: null,
+            'phone' => $_POST['customer_phone'] ?: null,
             'invoice_no' => 'INV-' . strtoupper(uniqid()),
             'subtotal' => $_POST['subtotal'],
             'vat' => $_POST['vat'],
@@ -60,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Insert payment if paid
         if ($_POST['payment_status'] == 'paid' || $_POST['payment_status'] == 'partial') {
             $payment_data = [
+                'customer_id' => $customer_id,
                 'sales_id' => $sale_id,
                 'type' => 'payment',
                 'amount' => $_POST['amount_paid'],
@@ -78,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['print_invoice'] = $sale_id;
             header("Location: print_invoice.php");
         } else {
-            $completed = "Sale completed successfully! Invoice #" . $sale_data['invoice_no'];
+            $_SESSION['success'] = "Sale completed successfully! Invoice #" . $sale_data['invoice_no'];
             header("Location: view_sales.php");
         }
         exit();
@@ -89,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Get customers and products
-$customers = $mysqli->common_select('customers')['data'];
+$customers = $mysqli->common_select('customers', 'id, name, phone, email', [], 'name')['data'];
 $products = $mysqli->common_select('products', '*', ['is_deleted' => 0])['data'];
 
 require_once __DIR__ . '/../../requires/header.php';
@@ -114,6 +140,7 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
     ];
 }, $products);
 ?>
+
 <style>
 .search-container {
     position: relative;
@@ -195,7 +222,55 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
     display: none;
     margin-bottom: 20px;
 }
+
+.customer-search-container {
+    position: relative;
+}
+
+.customer-results {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: none;
+}
+
+.customer-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.customer-item:hover {
+    background-color: #f5f5f5;
+}
+
+.customer-item .customer-name {
+    font-weight: bold;
+}
+
+.customer-item .customer-details {
+    font-size: 12px;
+    color: #666;
+}
+.customer-item .badge {
+    font-size: 10px;
+    padding: 3px 5px;
+}
+
+.customer-details i {
+    width: 16px;
+    text-align: center;
+    margin-right: 3px;
+    color: #6c757d;
+}
 </style>
+
 <div class="container">
     <div class="page-inner">
         <div class="row">
@@ -208,14 +283,24 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Customer Name</label>
-                                        <input type="text" class="form-control" id="customerName" name="customer_name" placeholder="Enter customer name">
+                                        <label>Customer</label>
+                                        <div class="customer-search-container">
+                                            <input type="text" class="form-control" id="customerSearch" name="customer_name" placeholder="Search customer by name" autocomplete="off">
+                                            <div id="customerResults" class="customer-results"></div>
+                                        </div>
+                                        <input type="hidden" id="customerId" name="customer_id">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Customer Phone</label>
+                                        <input type="text" class="form-control" id="customerPhone" name="customer_phone" placeholder="Customer phone">
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label>Customer Email</label>
-                                        <input type="email" class="form-control" id="customerEmail" name="customer_email" placeholder="Enter customer email">
+                                        <input type="email" class="form-control" id="customerEmail" name="customer_email" placeholder="Customer email">
                                     </div>
                                 </div>
                             </div>
@@ -238,7 +323,6 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
                                 </div>
                             </div>
 
-                            
                             <div class="table-responsive mb-4">
                                 <table class="table table-bordered" id="posTable">
                                     <thead>
@@ -314,7 +398,7 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
                                 <div class="col-md-4" id="amountPaidField">
                                     <div class="form-group">
                                         <label>Amount Paid</label>
-                                        <input type="number" class="form-control" name="amount_paid" id="amountPaid" step="0.01" min="0">
+                                        <input type="number" class="form-control" name="amount_paid" id="amountPaid" step="0.01" min="0" required>
                                     </div>
                                 </div>
                             </div>
@@ -323,6 +407,7 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
                                 <button type="submit" name="save_sale" class="btn btn-success">Complete Sale</button>
                                 <button type="submit" name="print_invoice" class="btn btn-primary">Save & Print Invoice</button>
                                 <button type="button" id="clearCart" class="btn btn-danger">Clear Cart</button>
+                                <button type="button" id="newCustomerBtn" class="btn btn-info">New Customer</button>
                             </div>
                         </form>
                     </div>
@@ -331,14 +416,112 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
         </div>
     </div>
 </div>
+
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
+
 <script>
 // Product data with stock information
 const products = <?= json_encode($products_with_stock) ?>;
+const customers = <?= json_encode($customers) ?>;
 
 $(document).ready(function() {
     // Add alert for empty cart
     $('#posTbody').before('<div class="alert alert-danger alert-empty-cart">Please add at least one product to complete the sale.</div>');
+    
+    // Customer search handler - now searches name, phone, and email
+    $('#customerSearch').on('input', function() {
+        const searchTerm = $(this).val().trim();
+        const resultsContainer = $('#customerResults');
+        
+        if (searchTerm.length < 2) {
+            resultsContainer.hide().empty();
+            return;
+        }
+        
+        // Search in name, phone, or email (case insensitive)
+        const matchedCustomers = customers.filter(c => {
+            const searchLower = searchTerm.toLowerCase();
+            return (
+                (c.name && c.name.toLowerCase().includes(searchLower)) ||
+                (c.phone && c.phone.includes(searchTerm)) || // Phone numbers often have + or other chars
+                (c.email && c.email.toLowerCase().includes(searchLower))
+            );
+        }).slice(0, 10); // Limit to 10 results
+        
+        if (matchedCustomers.length === 0) {
+            resultsContainer.html('<div class="customer-item">No customers found</div>').show();
+            return;
+        }
+        
+        let resultsHtml = '';
+        matchedCustomers.forEach(customer => {
+            // Highlight which field matched
+            let matchedField = '';
+            if (customer.name && customer.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                matchedField = 'Name';
+            } else if (customer.phone && customer.phone.includes(searchTerm)) {
+                matchedField = 'Phone';
+            } else if (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) {
+                matchedField = 'Email';
+            }
+            
+            resultsHtml += `
+                <div class="customer-item" 
+                     data-id="${customer.id}" 
+                     data-name="${customer.name || ''}" 
+                     data-phone="${customer.phone || ''}" 
+                     data-email="${customer.email || ''}">
+                    <div class="customer-name">
+                        ${customer.name || 'No name provided'}
+                        ${matchedField ? `<span class="badge badge-info ml-2">${matchedField}</span>` : ''}
+                    </div>
+                    <div class="customer-details">
+                        ${customer.phone ? '<i class="fas fa-phone"></i> ' + customer.phone + ' | ' : ''}
+                        ${customer.email ? '<i class="fas fa-envelope"></i> ' + customer.email : ''}
+                        ${!customer.phone && !customer.email ? 'No contact details' : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        resultsContainer.html(resultsHtml).show();
+    });
+    
+    // Handle customer selection
+    $(document).on('click', '.customer-item', function() {
+        const customerId = $(this).data('id');
+        const customerName = $(this).data('name');
+        const customerPhone = $(this).data('phone');
+        const customerEmail = $(this).data('email');
+        
+        // If customer has no name but we found by phone/email, prompt for name
+        if (!customerName) {
+            const enteredName = prompt("Customer found by contact details. Please enter customer name:");
+            if (enteredName) {
+                $('#customerSearch').val(enteredName);
+                $('#customerPhone').val(customerPhone);
+                $('#customerEmail').val(customerEmail);
+                $('#customerResults').hide().empty();
+                return;
+            }
+        }
+        
+        $('#customerSearch').val(customerName || '');
+        $('#customerId').val(customerId);
+        $('#customerPhone').val(customerPhone || '');
+        $('#customerEmail').val(customerEmail || '');
+        
+        $('#customerResults').hide().empty();
+    });
+    
+    // New customer button
+    $('#newCustomerBtn').click(function() {
+        $('#customerSearch').val('');
+        $('#customerId').val('');
+        $('#customerPhone').val('');
+        $('#customerEmail').val('');
+        $('#customerSearch').focus();
+    });
     
     // Product search handler with suggestions
     $('#productSearch').on('input', function() {
@@ -423,6 +606,9 @@ $(document).ready(function() {
         if (!$(e.target).closest('.search-container').length) {
             $('#searchResults').hide();
         }
+        if (!$(e.target).closest('.customer-search-container').length) {
+            $('#customerResults').hide();
+        }
     });
     
     // Payment status handler
@@ -432,7 +618,7 @@ $(document).ready(function() {
         }
     });
     
-     // Enhanced add product to cart function
+    // Enhanced add product to cart function
     function addProductToCart(product) {
         const rowId = Date.now();
         const maxQty = product.stock > 0 ? product.stock : 1;
@@ -522,7 +708,8 @@ $(document).ready(function() {
             $('#amountPaid').val(total.toFixed(2));
         }
     }
-     $('#posForm').submit(function(e) {
+    
+    $('#posForm').submit(function(e) {
         if ($('#posTbody tr').length === 0) {
             e.preventDefault();
             $('.alert-empty-cart').show();
@@ -544,6 +731,7 @@ $(document).ready(function() {
         if (confirm('Are you sure you want to clear the cart?')) {
             $('#posTbody').empty();
             updateTotals();
+            $('.alert-empty-cart').show();
         }
     });
     

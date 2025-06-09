@@ -79,10 +79,10 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <?php foreach ($customers as $index => $customer): ?>
                                             <tr>
                                                 <td><?= $index + 1 ?></td>
-                                                <td><?= htmlspecialchars($customer->name) ?></td>
-                                                <td><?= htmlspecialchars($customer->phone) ?></td>
-                                                <td><?= htmlspecialchars($customer->email) ?></td>
-                                                <td><?= htmlspecialchars($customer->address) ?></td>
+                                                <td><?= htmlspecialchars($customer->name ?? '') ?></td>
+                                                <td><?= htmlspecialchars($customer->phone ?? '') ?></td>
+                                                <td><?= htmlspecialchars($customer->email ?? '') ?></td>
+                                                <td><?= htmlspecialchars($customer->address ?? '') ?></td>
                                                 <td>
                                                     <div class="btn-group">
                                                         <a href="edit_customer.php?id=<?= $customer->id ?>" 

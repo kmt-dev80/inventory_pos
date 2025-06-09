@@ -3,7 +3,7 @@
     <div class="main-header-logo">
       <!-- Logo Header -->
       <div class="logo-header" data-background-color="dark">
-        <a href="index.php" class="logo">
+        <a href="<?= BASE_URL ?>index.php" class="logo">
           <img
             src="<?= BASE_URL ?>assets/img/kaiadmin/logo_light.svg"
             alt="navbar brand"

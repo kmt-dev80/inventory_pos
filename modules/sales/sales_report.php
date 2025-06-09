@@ -14,8 +14,8 @@ $payment_status = $_GET['payment_status'] ?? '';
 
 // Build where conditions
 $where = [];
-$where['created_at >='] = $start_date;
-$where['created_at <='] = $end_date;
+$where['created_at >='] = $start_date . ' 00:00:00';
+$where['created_at <='] = $end_date . ' 23:59:59';
 
 if ($customer_id) {
     $where['customer_id'] = $customer_id;

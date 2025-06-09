@@ -6,16 +6,16 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php';
 
-// Get filter parameters
+// Get filter parameters - Modified defaults to show recent sales
 $customer_id = $_GET['customer_id'] ?? '';
-$start_date = $_GET['start_date'] ?? date('Y-m-01');
+$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days')); // Last 30 days by default
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 $status = $_GET['status'] ?? '';
 
-// Build where conditions
+// Build where conditions - Modified to include time component
 $where = [];
-$where['created_at >='] = $start_date;
-$where['created_at <='] = $end_date;
+$where['created_at >='] = $start_date . ' 00:00:00';
+$where['created_at <='] = $end_date . ' 23:59:59';
 
 if ($customer_id) {
     $where['customer_id'] = $customer_id;
@@ -25,10 +25,11 @@ if ($status) {
     $where['payment_status'] = $status;
 }
 
-// Get sales
+// Get sales - Modified to ensure proper ordering
 $sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data'];
+
 // Get customers for filter dropdown
-$customers = $mysqli->common_select('customers')['data'];
+$customers = $mysqli->common_select('customers', 'id, name', [], 'name ASC')['data'];
 
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
@@ -103,33 +104,39 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($sales as $sale): 
-                                        $customer = $sale->customer_id ? 
-                                            $mysqli->common_select('customers', '*', ['id' => $sale->customer_id])['data'][0] : null;
-                                    ?>
+                                    <?php if (empty($sales)): ?>
                                         <tr>
-                                            <td><?= $sale->invoice_no ?></td>
-                                            <td><?= date('d M Y', strtotime($sale->created_at)) ?></td>
-                                            <td><?= $customer ? $customer->name : ($sale->customer_name ?: 'Walk-in') ?></td>
-                                            <td><?= number_format($sale->total, 2) ?></td>
-                                            <td>
-                                                <span class="badge badge-<?= 
-                                                    $sale->payment_status == 'paid' ? 'success' : 
-                                                    ($sale->payment_status == 'partial' ? 'warning' : 'danger')
-                                                ?>">
-                                                    <?= ucfirst($sale->payment_status) ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="sale_details.php?id=<?= $sale->id ?>" class="btn btn-info btn-sm">View</a>
-                                                <a href="print_invoice.php?id=<?= $sale->id ?>" target="_blank" class="btn btn-secondary btn-sm">Print</a>
-                                                <?php if ($_SESSION['user']->role == 'admin'): ?>
-                                                    <a href="edit_sale.php?id=<?= $sale->id ?>" class="btn btn-primary btn-sm">Edit</a>
-                                                    <a href="sales_payment.php?id=<?= $sale->id ?>" class="btn btn-warning btn-sm">Payments</a>
-                                                <?php endif; ?>
-                                            </td>
+                                            <td colspan="6" class="text-center">No sales found for the selected criteria</td>
                                         </tr>
-                                    <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <?php foreach ($sales as $sale): 
+                                            $customer = $sale->customer_id ? 
+                                                $mysqli->common_select('customers', 'name', ['id' => $sale->customer_id])['data'][0] : null;
+                                        ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars($sale->invoice_no) ?></td>
+                                                <td><?= date('d M Y H:i', strtotime($sale->created_at)) ?></td>
+                                                <td><?= htmlspecialchars($customer ? $customer->name : ($sale->customer_name ?: 'Walk-in')) ?></td>
+                                                <td><?= number_format($sale->total, 2) ?></td>
+                                                <td>
+                                                    <span class="badge badge-<?= 
+                                                        $sale->payment_status == 'paid' ? 'success' : 
+                                                        ($sale->payment_status == 'partial' ? 'warning' : 'danger')
+                                                    ?>">
+                                                        <?= ucfirst($sale->payment_status) ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="sale_details.php?id=<?= $sale->id ?>" class="btn btn-info btn-sm">View</a>
+                                                    <a href="print_invoice.php?id=<?= $sale->id ?>" target="_blank" class="btn btn-secondary btn-sm">Print</a>
+                                                    <?php if ($_SESSION['user']->role == 'admin'): ?>
+                                                        <a href="edit_sale.php?id=<?= $sale->id ?>" class="btn btn-primary btn-sm">Edit</a>
+                                                        <a href="sales_payment.php?id=<?= $sale->id ?>" class="btn btn-warning btn-sm">Payments</a>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>

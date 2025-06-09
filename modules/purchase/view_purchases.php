@@ -14,8 +14,8 @@ $status = $_GET['status'] ?? '';
 
 // Build where conditions with proper operators
 $where = [
-    'purchase_date >=' => $start_date,
-    'purchase_date <=' => $end_date
+    'purchase_date >=' => $start_date . ' 00:00:00',
+    'purchase_date <=' => $end_date . ' 23:59:59'
 ];
 
 if ($supplier_id && $supplier_id !='') {
