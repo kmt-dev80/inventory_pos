@@ -35,15 +35,23 @@ $items = $items_result['data'];
 $payments_result = $mysqli->common_select('purchase_payment', '*', ['purchase_id' => $purchase_id]);
 $payments = $payments_result['data'];
 
-// Calculate paid amount
+// Calculate paid amount and refund amount separately
 $paid_amount = 0;
+$refund_amount = 0;
+
 foreach ($payments as $payment) {
     if ($payment->type == 'payment') {
         $paid_amount += $payment->amount;
     } else {
-        $paid_amount -= $payment->amount;
+        $refund_amount += $payment->amount;
     }
 }
+
+// Balance due is based on original purchase minus payments (not considering refunds)
+$balance = $purchase->total - $paid_amount;
+
+// Total refunded is separate
+$total_refunded = $refund_amount;
 
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
@@ -165,8 +173,12 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td><?= number_format($paid_amount, 2) ?></td>
                                             </tr>
                                             <tr>
+                                                <td colspan="6" class="text-right"><strong>Total Refunded</strong></td>
+                                                <td><?= number_format($total_refunded, 2) ?></td>
+                                            </tr>
+                                            <tr>
                                                 <td colspan="6" class="text-right"><strong>Balance Due</strong></td>
-                                                <td><?= number_format($purchase->total - $paid_amount, 2) ?></td>
+                                                <td><?= number_format($balance, 2) ?></td>
                                             </tr>
                                         </tfoot>
                                     </table>

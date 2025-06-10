@@ -134,6 +134,15 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <?php if (empty($returns)): ?>
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4">
+                                                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                                <h5>No purchase returns found</h5>
+                                                <p class="text-muted">Try adjusting your filters</p>
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
                                     <?php foreach ($returns as $return): ?>
                                         <tr>
                                             <td><?= date('d M Y', strtotime($return['created_at'])) ?></td>
@@ -150,6 +159,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>

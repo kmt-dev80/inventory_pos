@@ -222,7 +222,7 @@ $createTables = [
         product_id INT NOT NULL,
         quantity INT NOT NULL,
         unit_price DECIMAL(10,2) NOT NULL,
-        discount DECIMAL(5,2) DEFAULT 0,
+        discount DECIMAL(10,2) DEFAULT 0,
         subtotal DECIMAL(10,2) DEFAULT 0,
         vat DECIMAL(5,2) DEFAULT 0,    
         total_price DECIMAL(10,2) NOT NULL,

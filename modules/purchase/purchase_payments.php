@@ -31,17 +31,23 @@ $supplier = $mysqli->common_select('suppliers', '*', ['id' => $purchase->supplie
 $payments_result = $mysqli->common_select('purchase_payment', '*', ['purchase_id' => $purchase_id]);
 $payments = $payments_result['data'];
 
-// Calculate paid amount and balance
+// Calculate paid amount and refund amount separately
 $paid_amount = 0;
+$refund_amount = 0;
+
 foreach ($payments as $payment) {
     if ($payment->type == 'payment') {
         $paid_amount += $payment->amount;
     } else {
-        $paid_amount -= $payment->amount;
+        $refund_amount += $payment->amount;
     }
 }
 
+// Balance due is based on original purchase minus payments (not considering refunds)
 $balance = $purchase->total - $paid_amount;
+
+// Total refunded is separate
+$total_refunded = $refund_amount;
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -103,15 +109,19 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <h5>Payment Summary</h5>
                                         <table class="table">
                                             <tr>
-                                                <td><strong>Total Amount:</strong></td>
+                                                <td colspan="6"><strong>Total Amount:</strong></td>
                                                 <td><?= number_format($purchase->total, 2) ?></td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Paid Amount:</strong></td>
+                                                <td colspan="6" class="text-right"><strong>Paid Amount</strong></td>
                                                 <td><?= number_format($paid_amount, 2) ?></td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Balance Due:</strong></td>
+                                                <td colspan="6" class="text-right"><strong>Total Refunded</strong></td>
+                                                <td><?= number_format($total_refunded, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6" class="text-right"><strong>Balance Due</strong></td>
                                                 <td><?= number_format($balance, 2) ?></td>
                                             </tr>
                                         </table>
