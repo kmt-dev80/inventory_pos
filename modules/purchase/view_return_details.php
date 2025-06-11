@@ -31,12 +31,20 @@ $supplier = $mysqli->common_select('suppliers', '*', ['id' => $purchase->supplie
 // Fetch returned items
 $return_items = $mysqli->common_select('purchase_return_items', '*', ['purchase_return_id' => $return_id])['data'] ?? [];
 
-// Calculate totals
+// Calculate totals properly
 $total_refund = 0;
-foreach ($return_items as $item) {
-    $total_refund += $item->quantity * $item->unit_price;
-}
+$total_vat = 0;
+$total_discounted = 0;
 
+foreach ($return_items as $item) {
+    $discounted_price = $item->unit_price;
+    $vat_amount = $item->vat_amount ?? ($discounted_price * ($item->vat_rate_used ?? 0) / 100);
+    $total_per_unit = $discounted_price + $vat_amount;
+    
+    $total_refund += $total_per_unit * $item->quantity;
+    $total_vat += $vat_amount * $item->quantity;
+    $total_discounted += $discounted_price * $item->quantity;
+}
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
@@ -130,6 +138,14 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     <?php endif; ?>
                                 </tbody>
                                 <tfoot>
+                                    <tr>
+                                        <th colspan="4" class="text-right">Subtotal (After Discount):</th>
+                                        <th colspan="2"><?= number_format($total_discounted, 2) ?></th>
+                                    </tr>
+                                    <tr>
+                                        <th colspan="4" class="text-right">VAT Amount:</th>
+                                        <th colspan="2"><?= number_format($total_vat, 2) ?></th>
+                                    </tr>
                                     <tr>
                                         <th colspan="4" class="text-right">Total Refund:</th>
                                         <th colspan="2"><?= number_format($total_refund, 2) ?></th>

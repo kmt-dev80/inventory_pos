@@ -91,21 +91,21 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <div class="form-group">
                                 <label for="name">Customer Name *</label>
                                 <input type="text" class="form-control" id="name" name="name" 
-                                       value="<?= htmlspecialchars($customer['name']) ?>" required>
+                                       value="<?= htmlspecialchars(($customer['name']) ?? '') ?>" required>
                             </div>
                             <div class="form-group">
                                 <label for="phone">Phone Number</label>
                                 <input type="text" class="form-control" id="phone" name="phone" 
-                                       value="<?= htmlspecialchars($customer['phone']) ?>">
+                                       value="<?= htmlspecialchars(($customer['phone']) ?? '') ?>">
                             </div>
                             <div class="form-group">
                                 <label for="email">Email Address</label>
                                 <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?= htmlspecialchars($customer['email']) ?>">
+                                       value="<?= htmlspecialchars(($customer['email']) ?? '') ?>">
                             </div>
                             <div class="form-group">
                                 <label for="address">Address</label>
-                                <textarea class="form-control" id="address" name="address" rows="3"><?= htmlspecialchars($customer['address']) ?></textarea>
+                                <textarea class="form-control" id="address" name="address" rows="3"><?= htmlspecialchars(($customer['address']) ?? '')?></textarea>
                             </div>
                             <div class="form-group text-right">
                                 <a href="view_customers.php" class="btn btn-secondary">Cancel</a>
