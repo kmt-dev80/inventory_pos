@@ -101,6 +101,15 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <h4 class="card-title">Purchase Payments #<?= $purchase->reference_no ?></h4>
                             <a href="purchase_details.php?id=<?= $purchase->id ?>" class="btn btn-secondary">Back to Purchase</a>
                         </div>
+                         <?php if (isset($_SESSION['error'])): ?>
+                            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
+                            <?php unset($_SESSION['error']); ?>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($_SESSION['success'])): ?>
+                            <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success']) ?></div>
+                            <?php unset($_SESSION['success']); ?>
+                        <?php endif; ?>
                         
                         <div class="row mb-4">
                             <div class="col-md-6">

@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $details = trim($_POST['details']);
     
     if (empty($name)) {
-        $error = 'Category name is required';
+        $_SESSION['error'] = 'Category name is required';
     } else {
         // Check for duplicate names
         $table_name = '';
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $check = $mysqli->common_select($table_name, 'id', $where);
         if (!$check['error'] && !empty($check['data'])) {
-            $error = "A {$category_type} category with this name already exists";
+           $_SESSION['error'] = "A {$category_type} category with this name already exists";
         } else {
             // Prepare update data
             $update_data = [
@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: view_categories.php");
                 exit();
             } else {
-                $error = 'Error updating category: ' . $result['error_msg'];
+                $_SESSION['error'] = 'Error updating category: ' . $result['error_msg'];
             }
         }
     }
@@ -166,6 +166,15 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                 <i class="fas fa-arrow-left"></i> Back to Categories
             </a>
         </div>
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['success'])): ?>
+            <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success']) ?></div>
+            <?php unset($_SESSION['success']); ?>
+        <?php endif; ?>
         
         <div class="row">
             <div class="col-md-8">
@@ -174,9 +183,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                         <div class="card-title">Category Information</div>
                     </div>
                     <div class="card-body">
-                        <?php if ($error): ?>
-                            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-                        <?php endif; ?>
                         
                         <form method="post">
                             <div class="form-group">

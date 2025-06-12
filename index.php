@@ -49,30 +49,39 @@ $totalProducts = $mysqli->common_select('products', 'COUNT(id) as count', ['is_d
 $totalCustomers = $mysqli->common_select('customers', 'COUNT(id) as count');
 $totalSuppliers = $mysqli->common_select('suppliers', 'COUNT(id) as count');
 
-// Low stock count
+// Low stock count (less than 10)
 $lowStockQuery = $conn->query("
-    SELECT COUNT(p.id) as count 
+    SELECT COUNT(DISTINCT p.id) as count 
     FROM products p
-    LEFT JOIN (
-        SELECT 
-            s.product_id,
-            SUM(CASE WHEN s.change_type = 'purchase' THEN s.qty ELSE 0 END) -
-            SUM(CASE WHEN s.change_type = 'sale' THEN s.qty ELSE 0 END) +
-            COALESCE((
-                SELECT SUM(CASE WHEN ia.adjustment_type = 'add' THEN ia.quantity ELSE -ia.quantity END)
-                FROM inventory_adjustments ia
-                WHERE ia.product_id = s.product_id
-            ), 0) +
-            SUM(CASE WHEN s.change_type = 'purchase_return' THEN s.qty ELSE 0 END) -
-            SUM(CASE WHEN s.change_type = 'sales_return' THEN s.qty ELSE 0 END) as current_stock
-        FROM stock s
-        GROUP BY s.product_id
-    ) stock_summary ON p.id = stock_summary.product_id
-    WHERE p.is_deleted = 0 AND (stock_summary.current_stock < 10 OR stock_summary.current_stock IS NULL)
+    LEFT JOIN stock s ON p.id = s.product_id
+    WHERE p.is_deleted = 0
+    GROUP BY p.id
+    HAVING COALESCE(SUM(s.qty), 0) < 10
 ");
 $lowStockCount = $lowStockQuery->fetch_assoc();
 $lowStockQuery->free();
 
+
+// Low stock items (less than 10)
+$lowStockItemsQuery = $conn->query("
+    SELECT 
+        p.id, 
+        p.name, 
+        p.barcode,
+        COALESCE(SUM(s.qty), 0) as current_stock
+    FROM products p
+    LEFT JOIN stock s ON p.id = s.product_id
+    WHERE p.is_deleted = 0
+    GROUP BY p.id
+    HAVING current_stock < 10
+    ORDER BY current_stock ASC
+    LIMIT 5
+");
+$lowStockItems = [];
+while ($row = $lowStockItemsQuery->fetch_assoc()) {
+    $lowStockItems[] = $row;
+}
+$lowStockItemsQuery->free();
 // Recent sales (last 5)
 $recentSalesQuery = $conn->query("
     SELECT s.id, s.invoice_no, s.total, s.created_at, c.name as customer, u.username as cashier
@@ -104,39 +113,6 @@ while ($row = $recentPurchasesQuery->fetch_assoc()) {
     $recentPurchases[] = $row;
 }
 $recentPurchasesQuery->free();
-
-// Low stock items (less than 10)
-$lowStockItemsQuery = $conn->query("
-    SELECT 
-        p.id, 
-        p.name, 
-        p.barcode,
-        stock_summary.current_stock
-    FROM products p
-    LEFT JOIN (
-        SELECT 
-            s.product_id,
-            SUM(CASE WHEN s.change_type = 'purchase' THEN s.qty ELSE 0 END) -
-            SUM(CASE WHEN s.change_type = 'sale' THEN s.qty ELSE 0 END) +
-            COALESCE((
-                SELECT SUM(CASE WHEN ia.adjustment_type = 'add' THEN ia.quantity ELSE -ia.quantity END)
-                FROM inventory_adjustments ia
-                WHERE ia.product_id = s.product_id
-            ), 0) +
-            SUM(CASE WHEN s.change_type = 'purchase_return' THEN s.qty ELSE 0 END) -
-            SUM(CASE WHEN s.change_type = 'sales_return' THEN s.qty ELSE 0 END) as current_stock
-        FROM stock s
-        GROUP BY s.product_id
-    ) stock_summary ON p.id = stock_summary.product_id
-    WHERE p.is_deleted = 0 AND (stock_summary.current_stock < 10 OR stock_summary.current_stock IS NULL)
-    ORDER BY stock_summary.current_stock ASC
-    LIMIT 5
-");
-$lowStockItems = [];
-while ($row = $lowStockItemsQuery->fetch_assoc()) {
-    $lowStockItems[] = $row;
-}
-$lowStockItemsQuery->free();
 
 // Monthly sales data for chart
 $monthlySalesQuery = $conn->query("

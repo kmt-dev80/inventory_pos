@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Check if customer already exists
         $check = $mysqli->common_select('customers', 'id', ['name' => $name]);
         if (!$check['error'] && !empty($check['data'])) {
-            $error = 'Customer already exists';
+             $_SESSION['error'] = 'Customer already exists';
         } else {
             $data = [
                 'name' => $name,
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $mysqli->common_insert('customers', $data);
             if (!$result['error']) {
                 $_SESSION['success'] = 'Customer added successfully';
-                header("Location: view_customers.php");
+                header("Location: add_customer.php");
                 exit();
             } else {
                 $error = 'Error adding customer: ' . $result['error_msg'];
@@ -61,7 +61,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
         </div>
         
         <?php if ($error): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+             <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
+            <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
         
         <?php if (isset($_SESSION['success'])): ?>

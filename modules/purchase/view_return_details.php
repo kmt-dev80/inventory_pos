@@ -62,8 +62,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 <i class="fas fa-arrow-left"></i> Back to Returns
                             </a>
                         </div>
-                    </div>
-                    <div class="card-body">
                         <?php if (isset($_SESSION['error'])): ?>
                             <div class="alert alert-danger"><?= $_SESSION['error'] ?></div>
                             <?php unset($_SESSION['error']); ?>
@@ -73,7 +71,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <div class="alert alert-success"><?= $_SESSION['success'] ?></div>
                             <?php unset($_SESSION['success']); ?>
                         <?php endif; ?>
-
+                    </div>
+                    <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">

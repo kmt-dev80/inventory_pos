@@ -74,15 +74,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
             </div>
         </div>
         
-        <?php if ($error): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
-        
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
-        
         <div class="row">
             <div class="col-md-8">
                 <div class="card">

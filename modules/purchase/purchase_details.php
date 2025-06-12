@@ -68,6 +68,15 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <h4 class="card-title">Purchase Details #<?= $purchase->reference_no ?></h4>
                             <a href="view_purchases.php" class="btn btn-secondary">Back to Purchases</a>
                         </div>
+                        <?php if (isset($_SESSION['error'])): ?>
+                            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
+                            <?php unset($_SESSION['error']); ?>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($_SESSION['success'])): ?>
+                            <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success']) ?></div>
+                            <?php unset($_SESSION['success']); ?>
+                        <?php endif; ?>
                         
                         <div class="row">
                             <div class="col-md-6">

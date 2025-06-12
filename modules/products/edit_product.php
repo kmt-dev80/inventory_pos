@@ -26,7 +26,7 @@ if ($product_id > 0) {
         exit();
     }
 } else {
-    header("Location: view_product.php");
+    header("Location: edit_product.php");
     exit();
 }
 
@@ -108,6 +108,15 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
         </div>
+         <?php if ($error): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+            <?php unset($error); ?>
+        <?php endif; ?>
+        
+        <?php if ($success): ?>
+            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+            <?php unset($success); ?>
+        <?php endif; ?>
         
         <div class="row">
             <div class="col-md-12">

@@ -189,12 +189,14 @@ require_once __DIR__ . '/../../requires/topbar.php';
                     
                     <?php if ($error): ?>
                         <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                         <?php unset($error); ?>
                     <?php endif; ?>
                     
                     <?php if ($success): ?>
                         <div class="alert alert-success">
                             <?= htmlspecialchars($success) ?>
                         </div>
+                         <?php unset($success); ?>
                     <?php endif; ?>
                     
                     <div class="row">

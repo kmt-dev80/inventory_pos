@@ -192,10 +192,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
             <?php unset($_SESSION['success']); ?>
         <?php endif; ?>
         
-        <?php if ($error): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
-        
         <?php if ($action === 'add' || $action === 'edit'): ?>
             <!-- Add/Edit Brand Form -->
             <div class="row">

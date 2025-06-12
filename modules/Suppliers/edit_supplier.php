@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $company_name = trim($_POST['company_name']);
 
     if (empty($name)) {
-        $error = 'Supplier name is required';
+         $_SESSION['error'] = 'Supplier name is required';
     } else {
         // Check if supplier already exists (excluding current supplier)
         $check = $mysqli->common_select('suppliers', 'id', [
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         
         if (!$check['error'] && !empty($check['data'])) {
-            $error = 'Supplier already exists';
+             $_SESSION['error'] = 'Supplier already exists';
         } else {
             $data = [
                 'name' => $name,
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: view_suppliers.php");
                 exit();
             } else {
-                $error = 'Error updating supplier: ' . $result['error_msg'];
+                $_SESSION['error'] = 'Error updating supplier: ' . $result['error_msg'];
             }
         }
     }
@@ -76,8 +76,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
             </div>
         </div>
         
-        <?php if ($error): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
+            <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
         
         <div class="row">
