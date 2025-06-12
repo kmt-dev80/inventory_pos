@@ -7,8 +7,12 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 require_once __DIR__ . '/../../db_plugin.php'; 
 
 // Simplified stock calculation query using direct sum of quantities
-$query = "SELECT p.id, p.name, p.barcode, p.price, p.sell_price, 
-                 COALESCE(SUM(s.qty), 0) as current_stock
+$query = "SELECT p.id, p.name, p.barcode, p.sell_price, 
+                 COALESCE(SUM(s.qty), 0) as current_stock,
+                 CASE 
+                    WHEN SUM(s.qty) = 0 THEN p.price
+                    ELSE SUM(s.qty * s.price) / SUM(s.qty)
+                 END as avg_cost_price
           FROM products p
           LEFT JOIN stock s ON p.id = s.product_id
           WHERE p.is_deleted = 0
@@ -64,18 +68,22 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 </thead>
                                 <tbody>
                                     <?php while($product = $products->fetch_object()): 
-                                        $stock_value = $product->current_stock * $product->price;
+                                        // Use avg_cost_price instead of price for calculations
+                                        $cost_price = $product->avg_cost_price ?? $product->price ?? 0;
+                                        $stock_value = ($product->current_stock ?? 0) * $cost_price;
                                         $stock_class = '';
-                                        if($product->current_stock <= 0) $stock_class = 'text-danger';
-                                        elseif($product->current_stock < 10) $stock_class = 'text-warning';
+                                        
+                                        // Stock level classes
+                                        if(($product->current_stock ?? 0) <= 0) $stock_class = 'text-danger';
+                                        elseif(($product->current_stock ?? 0) < 10) $stock_class = 'text-warning';
                                     ?>
                                     <tr>
                                         <td><?= $product->id ?></td>
                                         <td><?= htmlspecialchars($product->name) ?></td>
                                         <td><?= $product->barcode ?></td>
-                                        <td><?= number_format($product->price, 2) ?></td>
-                                        <td><?= number_format($product->sell_price, 2) ?></td>
-                                        <td class="<?= $stock_class ?>"><?= $product->current_stock ?></td>
+                                        <td><?= number_format($cost_price, 2) ?></td> <!-- Changed to use cost_price -->
+                                        <td><?= number_format($product->sell_price ?? 0, 2) ?></td>
+                                        <td class="<?= $stock_class ?>"><?= $product->current_stock ?? 0 ?></td>
                                         <td><?= number_format($stock_value, 2) ?></td>
                                         <td>
                                             <a href="product_stock_history.php?id=<?= $product->id ?>" class="btn btn-sm btn-info">

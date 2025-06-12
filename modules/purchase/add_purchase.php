@@ -45,17 +45,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $item_result = $mysqli->common_insert('purchase_items', $item_data);
             if ($item_result['error']) throw new Exception($item_result['error_msg']);
             
-            // Update stock
+            // Update stock with discounted price (excluding VAT)
+            $discounted_price = $product['price'] * (1 - ($product['discount'] ?? 0) / 100);
             $stock_data = [
                 'product_id' => $product['id'],
                 'user_id' => $_SESSION['user']->id,
                 'change_type' => 'purchase',
                 'qty' => $product['quantity'],
-                'price' => $product['price'],
+                'price' => $discounted_price, // Using discounted price without VAT
                 'purchase_id' => $purchase_id,
                 'note' => 'Purchase added'
             ];
-            
+
             $stock_result = $mysqli->common_insert('stock', $stock_data);
             if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
         }
