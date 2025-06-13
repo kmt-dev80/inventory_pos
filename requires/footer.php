@@ -265,7 +265,7 @@
 
 <script>
   $(document).ready(function() {
-    ['#productTable', '#stockTable', '#purchasesTable', '#returnsTable', '#salesTable', '#salesReport'].forEach(function(id) {
+    ['#productTable', '#stockTable', '#purchasesTable', '#returnsTable', '#salesTable', '#salesReport', '#salesReturnsTable'].forEach(function(id) {
         $(id).DataTable({
             dom: 'lBfrtip',
             buttons: ['csv', 'excel', 'pdf', 'print']

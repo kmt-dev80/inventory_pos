@@ -116,6 +116,11 @@
                   <span class="sub-item">Sales Report</span>
                 </a>
               </li>
+              <li>
+                <a href="<?= BASE_URL ?>modules/sales/view_sales_return.php">
+                  <span class="sub-item">View Returns</span>
+                </a>
+              </li>
             </ul>
           </div>
         </li>

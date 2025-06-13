@@ -32,19 +32,24 @@ $customer = $sale->customer_id ?
 $items_result = $mysqli->common_select('sale_items', '*', ['sale_id' => $sale_id]);
 $items = $items_result['data'];
 
-// Get payments
+// Get payments and returns
 $payments_result = $mysqli->common_select('sales_payment', '*', ['sales_id' => $sale_id]);
 $payments = $payments_result['data'];
 
-// Calculate paid amount
-$paid_amount = 0;
+// Calculate payment totals
+$total_payments = 0;
+$total_refunds = 0;
+
 foreach ($payments as $payment) {
     if ($payment->type == 'payment') {
-        $paid_amount += $payment->amount;
+        $total_payments += $payment->amount;
     } else {
-        $paid_amount -= $payment->amount;
+        $total_refunds += $payment->amount;
     }
 }
+
+$net_paid = $total_payments - $total_refunds;
+$balance_due = $sale->total - $total_payments; // Balance based only on payments, not refunds
 
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
@@ -59,7 +64,10 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h4 class="card-title">Sale Details #<?= $sale->invoice_no ?></h4>
-                            <a href="view_sales.php" class="btn btn-secondary">Back to Sales</a>
+                            <div>
+                                <a href="view_sales.php" class="btn btn-secondary">Back to Sales</a>
+                                <a href="print_invoice.php?id=<?= $sale->id ?>" target="_blank" class="btn btn-primary">Print Invoice</a>
+                            </div>
                         </div>
                         
                         <div class="row">
@@ -155,18 +163,42 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td><?= number_format($sale->vat, 2) ?></td>
                                             </tr>
                                             <tr>
-                                                <td colspan="4" class="text-right"><strong>Total</strong></td>
+                                                <td colspan="4" class="text-right"><strong>Total Amount</strong></td>
                                                 <td><?= number_format($sale->total, 2) ?></td>
                                             </tr>
-                                            <tr>
-                                                <td colspan="4" class="text-right"><strong>Paid Amount</strong></td>
-                                                <td><?= number_format($paid_amount, 2) ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="4" class="text-right"><strong>Balance Due</strong></td>
-                                                <td><?= number_format($sale->total - $paid_amount, 2) ?></td>
-                                            </tr>
                                         </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Payment Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <tr>
+                                            <td class="text-right"><strong>Total Amount:</strong></td>
+                                            <td><?= number_format($sale->total, 2) ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-right"><strong>Total Payments:</strong></td>
+                                            <td><?= number_format($total_payments, 2) ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-right"><strong>Total Refunds:</strong></td>
+                                            <td><?= number_format($total_refunds, 2) ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-right"><strong>Net Paid Amount:</strong></td>
+                                            <td><?= number_format($net_paid, 2) ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-right"><strong>Balance Due:</strong></td>
+                                            <td><?= number_format(max(0, $balance_due), 2) ?></td>
+                                        </tr>
                                     </table>
                                 </div>
                             </div>
@@ -214,10 +246,11 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                         
                         <div class="mt-4">
                             <a href="view_sales.php" class="btn btn-secondary">Back to Sales</a>
-                            <a href="print_invoice.php?id=<?= $sale->id ?>" target="_blank" class="btn btn-primary">Print Invoice</a>
                             <?php if ($_SESSION['user']->role == 'admin' || $_SESSION['user']->role == 'cashier'): ?>
                                 <a href="sales_payment.php?id=<?= $sale->id ?>" class="btn btn-success">Add Payment</a>
-                                <a href="sales_return.php?id=<?= $sale->id ?>" class="btn btn-warning">Return Items</a>
+                                <?php if ($total_payments > 0): ?>
+                                    <a href="sales_return.php?id=<?= $sale->id ?>" class="btn btn-warning">Process Return</a>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>

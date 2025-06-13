@@ -32,17 +32,20 @@ $customer = $sale->customer_id ?
 $payments_result = $mysqli->common_select('sales_payment', '*', ['sales_id' => $sale_id]);
 $payments = $payments_result['data'];
 
-// Calculate paid amount and balance
-$paid_amount = 0;
+// Replace the payment calculation with:
+$total_payments = 0;
+$total_refunds = 0;
+
 foreach ($payments as $payment) {
     if ($payment->type == 'payment') {
-        $paid_amount += $payment->amount;
+        $total_payments += $payment->amount;
     } else {
-        $paid_amount -= $payment->amount;
+        $total_refunds += $payment->amount;
     }
 }
 
-$balance = $sale->total - $paid_amount;
+$paid_amount = $total_payments - $total_refunds;
+$balance = $sale->total - $total_payments; // Balance based only on payments
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -108,14 +111,22 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td><?= number_format($sale->total, 2) ?></td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Paid Amount:</strong></td>
+                                                <td><strong>Total Payments:</strong></td>
+                                                <td><?= number_format($total_payments, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Total Refunds:</strong></td>
+                                                <td><?= number_format($total_refunds, 2) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Net Paid:</strong></td>
                                                 <td><?= number_format($paid_amount, 2) ?></td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Balance Due:</strong></td>
                                                 <td><?= number_format($balance, 2) ?></td>
                                             </tr>
-                                        </table>
+                                                                                    </table>
                                     </div>
                                 </div>
                             </div>
