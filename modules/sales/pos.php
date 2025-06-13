@@ -67,13 +67,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $item_result = $mysqli->common_insert('sale_items', $item_data);
             if ($item_result['error']) throw new Exception($item_result['error_msg']);
             
-            // Update stock
+            // Calculate the actual price after discount (excluding VAT)
+            $totalDiscount = $_POST['discount'];
+            $totalSubtotal = $_POST['subtotal'];
+            
+            // Calculate discount percentage that applies to this product
+            $productShare = $product['total'] / $totalSubtotal;
+            $productDiscount = $totalDiscount * $productShare;
+            
+            // Calculate discounted price per unit
+            $discountedPricePerUnit = ($product['total'] - $productDiscount) / $product['quantity'];
+            
+            // Update stock with the discounted price (COGS)
             $stock_data = [
                 'product_id' => $product['id'],
                 'user_id' => $_SESSION['user']->id,
                 'change_type' => 'sale',
                 'qty' => -$product['quantity'], // Negative for sales
-                'price' => $product['price'],
+                'price' => $discountedPricePerUnit, // Store the actual price after discount
                 'sale_id' => $sale_id,
                 'note' => 'POS sale'
             ];
@@ -81,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stock_result = $mysqli->common_insert('stock', $stock_data);
             if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
         }
-        
+                    
         // Insert payment if paid
         if ($_POST['payment_status'] == 'paid' || $_POST['payment_status'] == 'partial') {
             $payment_data = [

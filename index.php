@@ -49,14 +49,16 @@ $totalProducts = $mysqli->common_select('products', 'COUNT(id) as count', ['is_d
 $totalCustomers = $mysqli->common_select('customers', 'COUNT(id) as count');
 $totalSuppliers = $mysqli->common_select('suppliers', 'COUNT(id) as count');
 
-// Low stock count (less than 10)
 $lowStockQuery = $conn->query("
-    SELECT COUNT(DISTINCT p.id) as count 
-    FROM products p
-    LEFT JOIN stock s ON p.id = s.product_id
-    WHERE p.is_deleted = 0
-    GROUP BY p.id
-    HAVING COALESCE(SUM(s.qty), 0) < 10
+    SELECT COUNT(*) as count 
+    FROM (
+        SELECT p.id
+        FROM products p
+        LEFT JOIN stock s ON p.id = s.product_id
+        WHERE p.is_deleted = 0
+        GROUP BY p.id
+        HAVING COALESCE(SUM(s.qty), 0) < 10
+    ) as low_stock_items
 ");
 $lowStockCount = $lowStockQuery->fetch_assoc();
 $lowStockQuery->free();

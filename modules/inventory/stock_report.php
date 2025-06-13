@@ -6,18 +6,24 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php'; 
 
-// Simplified stock calculation query using direct sum of quantities
-$query = "SELECT p.id, p.name, p.barcode, p.sell_price, 
-                 COALESCE(SUM(s.qty), 0) as current_stock,
-                 CASE 
-                    WHEN SUM(s.qty) = 0 THEN p.price
-                    ELSE SUM(s.qty * s.price) / SUM(s.qty)
-                 END as avg_cost_price
-          FROM products p
-          LEFT JOIN stock s ON p.id = s.product_id
-          WHERE p.is_deleted = 0
-          GROUP BY p.id
-          ORDER BY p.name";
+
+$query = "SELECT 
+    p.id, p.name, p.barcode, p.sell_price, 
+    COALESCE(SUM(s.qty), 0) AS current_stock,
+    CASE 
+        WHEN SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty ELSE 0 END) = 0 
+        THEN p.price
+        ELSE 
+            SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty * s.price ELSE 0 END) 
+            / 
+            SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty ELSE 0 END)
+    END AS avg_cost_price
+FROM products p
+LEFT JOIN stock s ON p.id = s.product_id
+WHERE p.is_deleted = 0
+GROUP BY p.id
+ORDER BY p.name
+";
 
 $products = $mysqli->getConnection()->query($query);
 require_once __DIR__ . '/../../requires/header.php';
