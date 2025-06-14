@@ -203,6 +203,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <option value="cash">Cash</option>
                                             <option value="credit">Credit Note</option>
                                             <option value="bank_transfer">Bank Transfer</option>
+                                            <option value="exchange">Exchange</option>
                                         </select>
                                     </div>
                                 </div>

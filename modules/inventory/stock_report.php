@@ -40,6 +40,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <ul class="breadcrumb">
                         <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
                         <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/inventory/stock_logs.php">View Logs</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/inventory/low_stock.php">Low Stock</a></li>
                         <li class="breadcrumb-item active">Stock Report</li>
                     </ul>
                 </div>

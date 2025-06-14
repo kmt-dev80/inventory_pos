@@ -24,16 +24,12 @@
     <div class="sidebar-content">
       <ul class="nav nav-secondary">
         <li class="nav-item active">
-          <a
-            data-bs-toggle="collapse"
-            href="<?= BASE_URL ?>index.php"
-            class="collapsed"
-            aria-expanded="false"
-          >
+          <a href="<?= BASE_URL ?>index.php">
             <i class="fas fa-home"></i>
             <p>Dashboard</p>
           </a>
         </li>
+
         <li class="nav-section">
           <span class="sidebar-mini-icon">
             <i class="fa fa-ellipsis-h"></i>
@@ -232,6 +228,11 @@
                 </a>
               </li>
               <li>
+                <a href="<?= BASE_URL ?>modules/inventory/low_stock.php">
+                  <span class="sub-item">View Low-Stock</span>
+                </a>
+              </li>
+              <li>
                 <a href="<?= BASE_URL ?>modules/inventory/adjust_stock.php">
                   <span class="sub-item">Adjust Stock</span>
                 </a>
@@ -243,6 +244,12 @@
               </li>
             </ul>
           </div>
+        </li>
+        <li class="nav-item">
+          <a href="<?= BASE_URL ?>modules/inventory/profit_loss.php">
+             <i class="bi bi-shop"></i>
+            <span class="sub-item">Financial Report</span>
+          </a>
         </li>
       </ul>
     </div>

@@ -234,7 +234,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <label>Refund Method *</label>
                                         <select class="form-control" name="refund_method" id="refundMethod" required>
                                             <option value="cash">Cash</option>
-                                            <option value="credit">Credit Note</option>
+                                            <option value="credit">Credit</option>
                                             <option value="bank_transfer">Bank Transfer</option>
                                             <option value="exchange">Exchange</option>
                                         </select>

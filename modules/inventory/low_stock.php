@@ -6,18 +6,31 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php';
 
-// Set low stock threshold (hardcoded or could be fetched from session/database)
+// Set low stock threshold
 $low_stock_threshold = 10; // Default threshold value
 
-// Get low stock products
-$query = "SELECT p.id, p.name, p.barcode, p.price, p.sell_price, 
-                 COALESCE(SUM(s.qty), 0) as current_stock
-          FROM products p
-          LEFT JOIN stock s ON p.id = s.product_id
-          WHERE p.is_deleted = 0
-          GROUP BY p.id
-          HAVING current_stock <= ?
-          ORDER BY current_stock ASC";
+$query = "SELECT 
+    p.id, p.name, p.barcode, 
+    p.sell_price as default_sell_price,  /* Directly from products table */
+    COALESCE(SUM(s.qty), 0) as current_stock,
+    
+    /* Actual average cost price */
+    CASE 
+        WHEN SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty ELSE 0 END) = 0 
+        THEN p.price
+        ELSE 
+            SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty * s.price ELSE 0 END) 
+            / 
+            SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty ELSE 0 END)
+    END AS avg_cost_price
+    
+   
+FROM products p
+LEFT JOIN stock s ON p.id = s.product_id
+WHERE p.is_deleted = 0
+GROUP BY p.id
+HAVING current_stock <= ?
+ORDER BY current_stock ASC";
 
 $stmt = $mysqli->getConnection()->prepare($query);
 $stmt->bind_param('i', $low_stock_threshold);
@@ -28,36 +41,6 @@ require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
 ?>
-<!-- Print Styles -->
-<style media="print">
-    body * {
-        visibility: hidden;
-    }
-    .card, .card * {
-        visibility: visible;
-    }
-    .card {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        border: none;
-    }
-    .dataTables_length, .dataTables_filter, 
-    .dataTables_info, .dataTables_paginate,
-    .page-header, .breadcrumb, .col-auto {
-        display: none !important;
-    }
-    table {
-        width: 100% !important;
-    }
-    .card-header {
-        text-align: center;
-    }
-    .card-header h5:after {
-        content: " - <?= date('Y-m-d') ?>";
-    }
-</style>
 <div class="container">
     <div class="page-inner">
         <div class="page-header">
@@ -66,7 +49,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <h3 class="page-title">Low Stock Alerts</h3>
                     <ul class="breadcrumb">
                         <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="stock_report.php">Inventory</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/inventory/stock_logs.php">View Logs</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/inventory/stock_report.php">Stock Report</a></li>
                         <li class="breadcrumb-item active">Low Stock</li>
                     </ul>
                 </div>
@@ -84,11 +68,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <div class="card-header">
                         <div class="d-flex align-items-center">
                             <h5 class="card-title">Products Below Stock Threshold</h5>
-                            <div class="ml-auto">
-                                <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
-                                    <i class="fas fa-print"></i> Print Report
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -106,14 +85,14 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <th>Barcode</th>
                                             <th>Current Stock</th>
                                             <th>Cost Price</th>
-                                            <th>Sell Price</th>
+                                            <th>Sell Price</th>  <!-- Now shows direct from products table -->
                                             <th>Stock Value</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php while($product = $products->fetch_object()): 
-                                            $stock_value = $product->current_stock * $product->price;
+                                            $stock_value = ($product->current_stock ?? 0) * $product->avg_cost_price;
                                             $stock_class = $product->current_stock <= 0 ? 'text-danger' : 'text-warning';
                                         ?>
                                         <tr>
@@ -121,8 +100,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <td><?= htmlspecialchars($product->name) ?></td>
                                             <td><?= $product->barcode ?></td>
                                             <td class="<?= $stock_class ?>"><?= $product->current_stock ?></td>
-                                            <td><?= number_format($product->price, 2) ?></td>
-                                            <td><?= number_format($product->sell_price, 2) ?></td>
+                                            <td><?= number_format($product->avg_cost_price, 2) ?></td>
+                                            <td><?= number_format($product->default_sell_price, 2) ?></td>  <!-- Changed to default_sell_price -->
                                             <td><?= number_format($stock_value, 2) ?></td>
                                             <td>
                                                 <a href="product_stock_history.php?id=<?= $product->id ?>" class="btn btn-sm btn-info">
@@ -149,21 +128,3 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 </div>
 
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
-
-<script>
-$(document).ready(function() {
-    $('#lowStockTable').DataTable({
-        dom: '<"top"f>rt<"bottom"lip><"clear">',
-        order: [[3, 'asc']], // Sort by stock level (ascending)
-        pageLength: 25,
-        language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search products...",
-            lengthMenu: "Show _MENU_ products per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ low stock products",
-            infoEmpty: "No products found",
-            infoFiltered: "(filtered from _MAX_ total products)"
-        }
-    });
-});
-</script>

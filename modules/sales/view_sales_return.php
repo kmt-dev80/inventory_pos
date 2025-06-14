@@ -25,16 +25,23 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 
 <div class="container">
     <div class="page-inner">
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div>
+                    <h3 class="page-title">View Sales Return</h3>
+                    <ul class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/sales/pos.php">Pos</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/sales/view_sales.php">View Sales</a></li>
+                        <li class="breadcrumb-item active">View Sales Return</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <div class="row">
             <div class="col-md-12 grid-margin">
                 <div class="card">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4 class="card-title">Sales Returns</h4>
-                            <div>
-                                <a href="view_sales.php" class="btn btn-secondary">View Sales</a>
-                            </div>
-                        </div>
 
                         <div class="table-responsive">
                             <table id="salesReturnsTable" class="display table table-striped table-hover">

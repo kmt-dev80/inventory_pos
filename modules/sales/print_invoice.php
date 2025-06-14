@@ -31,25 +31,30 @@ $customer = $sale->customer_id ?
 $items_result = $mysqli->common_select('sale_items', '*', ['sale_id' => $sale_id]);
 $items = $items_result['data'];
 
-// Get payments
+// Get payments and refunds
 $payments_result = $mysqli->common_select('sales_payment', '*', ['sales_id' => $sale_id]);
 $payments = $payments_result['data'];
 
-// Calculate paid amount
-$paid_amount = 0;
+// Calculate payment totals
+$total_paid = 0;
+$total_refunded = 0;
+
 foreach ($payments as $payment) {
     if ($payment->type == 'payment') {
-        $paid_amount += $payment->amount;
+        $total_paid += $payment->amount;
     } else {
-        $paid_amount -= $payment->amount;
+        $total_refunded += $payment->amount;
     }
 }
 
-// Get company information (you would typically have this in a settings table)
-$company_name = "Your Company Name";
-$company_address = "123 Business Street, City, Country";
-$company_phone = "+1 234 567 890";
-$company_email = "info@yourcompany.com";
+$net_paid = $total_paid - $total_refunded;
+$balance_due = max(0, $sale->total - $total_paid); // Balance based only on payments, not refunds
+
+// Get company information
+$company_name = "Skyneer.it";
+$company_address = "123 Business Street, Chittagong, Bangladesh";
+$company_phone = "+880 1319028680";
+$company_email = "info@skyneer.it.com";
 $company_logo = BASE_URL . "assets/img/logo.png";
 
 header("Content-Type: text/html; charset=UTF-8");
@@ -235,16 +240,26 @@ header("Content-Type: text/html; charset=UTF-8");
                     <td><?= number_format($sale->vat, 2) ?></td>
                 </tr>
                 <tr>
-                    <td><strong>Total:</strong></td>
+                    <td><strong>Total Amount:</strong></td>
                     <td><?= number_format($sale->total, 2) ?></td>
                 </tr>
                 <tr>
-                    <td><strong>Paid Amount:</strong></td>
-                    <td><?= number_format($paid_amount, 2) ?></td>
+                    <td><strong>Total Paid:</strong></td>
+                    <td><?= number_format($total_paid, 2) ?></td>
+                </tr>
+                <?php if ($total_refunded > 0): ?>
+                <tr>
+                    <td><strong>Total Refunded:</strong></td>
+                    <td><?= number_format($total_refunded, 2) ?></td>
+                </tr>
+                <?php endif; ?>
+                <tr>
+                    <td><strong>Net Paid:</strong></td>
+                    <td><?= number_format($net_paid, 2) ?></td>
                 </tr>
                 <tr>
                     <td><strong>Balance Due:</strong></td>
-                    <td><?= number_format($sale->total - $paid_amount, 2) ?></td>
+                    <td><?= number_format($balance_due, 2) ?></td>
                 </tr>
             </table>
         </div>

@@ -37,11 +37,22 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 ?>
 <div class="container">
     <div class="page-inner">
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div>
+                    <h3 class="page-title">View Sales</h3>
+                    <ul class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/sales/pos.php">Pos</a></li>
+                        <li class="breadcrumb-item active">View Sales</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <div class="row">
             <div class="col-md-12 grid-margin">
                 <div class="card">
                     <div class="card-body">
-                        <h4 class="card-title">View Sales</h4>
                         
                         <!-- Filter Form -->
                         <form method="GET" class="mb-4">

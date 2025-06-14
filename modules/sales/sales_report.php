@@ -34,25 +34,30 @@ $customers = $mysqli->common_select('customers')['data'];
 // Calculate totals
 $total_sales = 0;
 $total_paid = 0;
+$total_refunded = 0;
 $total_due = 0;
 
 foreach ($sales as $sale) {
     $total_sales += $sale->total;
     
-    // Get payments for each sale
+    // Get payments and refunds for each sale
     $payments = $mysqli->common_select('sales_payment', '*', ['sales_id' => $sale->id])['data'];
     
     $paid = 0;
+    $refunded = 0;
     foreach ($payments as $payment) {
         if ($payment->type == 'payment') {
             $paid += $payment->amount;
         } else {
-            $paid -= $payment->amount;
+            $refunded += $payment->amount;
         }
     }
     
     $total_paid += $paid;
-    $total_due += ($sale->total - $paid);
+    $total_refunded += $refunded;
+    
+    // Calculate due based on original sale total minus payments (ignore refunds for due calculation)
+    $total_due += max(0, $sale->total - $paid);
 }
 
 require_once __DIR__ . '/../../requires/header.php';
@@ -62,11 +67,24 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 
 <div class="container">
     <div class="page-inner">
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div>
+                    <h3 class="page-title">Sales Report</h3>
+                    <ul class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>index.php">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/sales/pos.php">Pos</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/sales/view_sales.php">View Sales</a></li>
+                        <li class="breadcrumb-item"><a href="<?= BASE_URL ?>modules/sales/view_sales_return.php">View Sales Return</a></li>
+                        <li class="breadcrumb-item active">Sales Report</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <div class="row">
             <div class="col-md-12 grid-margin">
                 <div class="card">
                     <div class="card-body">
-                        <h4 class="card-title">Sales Report</h4>
                         
                         <!-- Filter Form -->
                         <form method="GET" class="mb-4">
@@ -114,9 +132,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             </div>
                         </form>
                         
-                        <!-- Summary Cards -->
+                       <!-- Updated Summary Cards -->
                         <div class="row mb-4">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-primary text-white">
                                     <div class="card-body">
                                         <h5 class="card-title">Total Sales</h5>
@@ -124,7 +142,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-success text-white">
                                     <div class="card-body">
                                         <h5 class="card-title">Total Paid</h5>
@@ -132,7 +150,15 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Refunded</h5>
+                                        <h2><?= number_format($total_refunded, 2) ?></h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
                                 <div class="card bg-danger text-white">
                                     <div class="card-body">
                                         <h5 class="card-title">Total Due</h5>
@@ -141,7 +167,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 </div>
                             </div>
                         </div>
-                        
+                                        
                         <!-- Sales Table -->
                         <div class="table-responsive">
                             <table class="table table-striped" id="salesReport">
@@ -152,6 +178,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <th>Customer</th>
                                         <th>Total</th>
                                         <th>Paid</th>
+                                        <th>Refunded</th>
                                         <th>Due</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -162,19 +189,21 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         $customer = $sale->customer_id ? 
                                             $mysqli->common_select('customers', '*', ['id' => $sale->customer_id])['data'][0] : null;
                                         
-                                        // Get payments for this sale
+                                        // Get payments and refunds for this sale
                                         $payments = $mysqli->common_select('sales_payment', '*', ['sales_id' => $sale->id])['data'];
                                         
                                         $paid = 0;
+                                        $refunded = 0;
                                         foreach ($payments as $payment) {
                                             if ($payment->type == 'payment') {
                                                 $paid += $payment->amount;
                                             } else {
-                                                $paid -= $payment->amount;
+                                                $refunded += $payment->amount;
                                             }
                                         }
                                         
-                                        $due = $sale->total - $paid;
+                                        // Due is based on original total minus payments only
+                                        $due = max(0, $sale->total - $paid);
                                     ?>
                                         <tr>
                                             <td><?= $sale->invoice_no ?></td>
@@ -182,6 +211,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <td><?= $customer ? $customer->name : ($sale->customer_name ?: 'Walk-in') ?></td>
                                             <td><?= number_format($sale->total, 2) ?></td>
                                             <td><?= number_format($paid, 2) ?></td>
+                                            <td><?= number_format($refunded, 2) ?></td>
                                             <td><?= number_format($due, 2) ?></td>
                                             <td>
                                                 <span class="badge badge-<?= 
