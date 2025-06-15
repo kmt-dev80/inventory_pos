@@ -1,5 +1,10 @@
 <?php
 session_start();
+
+if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true) {
+    header("Location: ../../login.php");
+    exit();
+}
 require_once __DIR__ . '/../../db_plugin.php';
 
 // API Endpoint for AJAX requests
@@ -15,22 +20,13 @@ if (isset($_GET['action'])) {
             }
 
             // Calculate current stock
-            $query = "SELECT COALESCE(SUM(CASE 
-                            WHEN s.change_type = 'purchase' THEN s.qty 
-                            WHEN s.change_type = 'purchase_return' THEN s.qty 
-                            WHEN s.change_type = 'sales_return' THEN s.qty 
-                            WHEN s.change_type = 'adjustment' AND s.qty > 0 THEN s.qty 
-                            ELSE 0 
-                         END), 0) - 
-                         COALESCE(SUM(CASE 
-                            WHEN s.change_type = 'sale' THEN s.qty 
-                            WHEN s.change_type = 'adjustment' AND s.qty < 0 THEN ABS(s.qty) 
-                            ELSE 0 
-                         END), 0) as current_stock
-                      FROM products p
-                      LEFT JOIN stock s ON p.id = s.product_id
-                      WHERE p.id = $product_id
-                      AND p.is_deleted = 0";
+            $query = "SELECT 
+                (COALESCE(SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment', 'sales_return') THEN s.qty ELSE 0 END), 0) - 
+                COALESCE(SUM(CASE WHEN s.change_type IN ('sale', 'purchase_return') THEN ABS(s.qty) ELSE 0 END), 0)) as current_stock
+                FROM products p
+                LEFT JOIN stock s ON p.id = s.product_id
+                WHERE p.id = $product_id
+                AND p.is_deleted = 0";
 
             $result = $mysqli->getConnection()->query($query);
             if (!$result) {
@@ -50,18 +46,38 @@ if (isset($_GET['action'])) {
                 throw new Exception('Invalid product ID');
             }
             
+            // Get basic product info
             $result = $mysqli->common_select('products', '*', ['id' => $product_id, 'is_deleted' => 0]);
             if ($result['error'] || empty($result['data'])) {
                 throw new Exception('Product not found');
             }
             
             $product = $result['data'][0];
+            
+            // Get most recent purchase price from stock table
+            $price_query = "SELECT price FROM stock 
+                            WHERE product_id = ? 
+                            AND change_type = 'purchase'
+                            ORDER BY created_at DESC 
+                            LIMIT 1";
+            $stmt = $mysqli->getConnection()->prepare($price_query);
+            $stmt->bind_param("i", $product_id);
+            $stmt->execute();
+            $price_result = $stmt->get_result();
+            
+            $actual_price = $product->price; // Default to product price
+            if ($price_result->num_rows > 0) {
+                $price_row = $price_result->fetch_object();
+                $actual_price = $price_row->price;
+            }
+            
             echo json_encode([
                 'success' => true,
                 'product' => [
                     'name' => htmlspecialchars($product->name),
                     'barcode' => $product->barcode,
                     'price' => number_format($product->price, 2),
+                    'actual_price' => number_format($actual_price, 2), // Add actual purchase price
                     'sell_price' => number_format($product->sell_price, 2)
                 ]
             ]);
@@ -72,12 +88,6 @@ if (isset($_GET['action'])) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         exit();
     }
-}
-
-// Regular Page Functionality
-if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== true) {
-    header("Location: ../../login.php");
-    exit();
 }
 
 $product_id = isset($_GET['product_id']) ? (int)$_GET['product_id'] : 0;
@@ -134,7 +144,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $adjustment_id = $adjustment_result['data'];
             
-            // 2. Insert into stock table
+            // 2. Get the most recent purchase price from stock table
+            $price_query = "SELECT price FROM stock 
+                            WHERE product_id = ? 
+                            AND change_type = 'purchase' 
+                            ORDER BY created_at DESC 
+                            LIMIT 1";
+            $stmt = $mysqli->getConnection()->prepare($price_query);
+            $stmt->bind_param("i", $adjustment_data['product_id']);
+            $stmt->execute();
+            $price_result = $stmt->get_result();
+
+            if ($price_result->num_rows > 0) {
+                $price_row = $price_result->fetch_object();
+                $product_price = $price_row->price;
+            } else {
+                // Fallback to product price if no purchase history exists
+                $product_result = $mysqli->common_select('products', 'price', ['id' => $adjustment_data['product_id']]);
+                if ($product_result['error'] || empty($product_result['data'])) {
+                    throw new Exception("Failed to get product price");
+                }
+                $product_price = $product_result['data'][0]->price;
+            }
+
+            // 3. Insert into stock table
             $qty_change = ($adjustment_data['adjustment_type'] === 'add') ? 
                           $adjustment_data['quantity'] : 
                           -$adjustment_data['quantity'];
@@ -144,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'user_id' => $adjustment_data['user_id'],
                 'change_type' => 'adjustment',
                 'qty' => $qty_change,
-                'price' => 0, // get current price from products table
+                'price' => $product_price, // Using actual purchase cost price
                 'adjustment_id' => $adjustment_id,
                 'note' => $adjustment_data['reason']
             ];
@@ -273,7 +306,10 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         </tr>
                                         <tr>
                                             <th>Cost Price</th>
-                                            <td id="productPrice"></td>
+                                            <td id="productPrice">
+                                                <!-- Will be filled dynamically -->
+                                                <small class="text-primary">Actual Purchase Price: </small>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th>Sell Price</th>
@@ -317,33 +353,37 @@ $(document).ready(function() {
     }
 
     function fetchProductInfo(productId) {
-        $.ajax({
-            url: '<?= $_SERVER['PHP_SELF'] ?>?action=get_product_info&product_id=' + productId,
-            method: 'GET',
-            dataType: 'json',
-            beforeSend: function() {
-                $('#productInfoPlaceholder').html('Loading product information...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#productName').text(response.product.name);
-                    $('#productBarcode').text(response.product.barcode);
-                    $('#productPrice').text(response.product.price);
-                    $('#productSellPrice').text(response.product.sell_price);
-                    
-                    $('#productInfoPlaceholder').hide();
-                    $('#productInfoContent').show();
-                } else {
-                    $('#productInfoPlaceholder').html('Failed to load product information');
-                    $('#productInfoContent').hide();
-                }
-            },
-            error: function() {
-                $('#productInfoPlaceholder').html('Error loading product information');
+    $.ajax({
+        url: '<?= $_SERVER['PHP_SELF'] ?>?action=get_product_info&product_id=' + productId,
+        method: 'GET',
+        dataType: 'json',
+        beforeSend: function() {
+            $('#productInfoPlaceholder').html('Loading product information...');
+        },
+        success: function(response) {
+            if (response.success) {
+                $('#productName').text(response.product.name);
+                $('#productBarcode').text(response.product.barcode);
+                // Show both list price and actual purchase price
+                $('#productPrice').html(
+                    '<span class="text-primary" title="Actual Purchase Price (after discount, excluding VAT)">' + 
+                    response.product.actual_price + '</span>'
+                );
+                $('#productSellPrice').text(response.product.sell_price);
+                
+                $('#productInfoPlaceholder').hide();
+                $('#productInfoContent').show();
+            } else {
+                $('#productInfoPlaceholder').html('Failed to load product information');
                 $('#productInfoContent').hide();
             }
-        });
-    }
+        },
+        error: function() {
+            $('#productInfoPlaceholder').html('Error loading product information');
+            $('#productInfoContent').hide();
+        }
+    });
+}
     
     function fetchCurrentStock(productId) {
         $.ajax({
