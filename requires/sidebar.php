@@ -246,7 +246,7 @@
         </li>
         <li class="nav-item">
           <a href="<?= BASE_URL ?>modules/inventory/profit_loss.php">
-             <i class="bi bi-shop"></i>
+             <i class="bi bi-bar-chart-line"></i>
             <span class="sub-item">Financial Report</span>
           </a>
         </li>
