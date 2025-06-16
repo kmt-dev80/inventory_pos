@@ -1,0 +1,4 @@
+Net Purchase Quantity (NPQ):
+NPQ = purchase_qty - purchase_return_qty + adjustment_add_qty + adjustment_remove_qty
+Net Purchase Cost (NPC):
+NPC(total_purchase_cost) = purchase_cost - purchase_return_cost + adjustment_remove_qty

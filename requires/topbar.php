@@ -89,79 +89,6 @@
               class="dropdown-menu messages-notif-box animated fadeIn"
               aria-labelledby="messageDropdown"
             >
-              <li>
-                <div
-                  class="dropdown-title d-flex justify-content-between align-items-center"
-                >
-                  Messages
-                  <a href="#" class="small">Mark all as read</a>
-                </div>
-              </li>
-              <li>
-                <div class="message-notif-scroll scrollbar-outer">
-                  <div class="notif-center">
-                    <a href="#">
-                      <div class="notif-img">
-                        <img
-                          src="<?= BASE_URL ?>assets/img/jm_denis.jpg"
-                          alt="Img Profile"
-                        />
-                      </div>
-                      <div class="notif-content">
-                        <span class="subject">Jimmy Denis</span>
-                        <span class="block"> How are you ? </span>
-                        <span class="time">5 minutes ago</span>
-                      </div>
-                    </a>
-                    <a href="#">
-                      <div class="notif-img">
-                        <img
-                          src="<?= BASE_URL ?>assets/img/chadengle.jpg"
-                          alt="Img Profile"
-                        />
-                      </div>
-                      <div class="notif-content">
-                        <span class="subject">Chad</span>
-                        <span class="block"> Ok, Thanks ! </span>
-                        <span class="time">12 minutes ago</span>
-                      </div>
-                    </a>
-                    <a href="#">
-                      <div class="notif-img">
-                        <img
-                          src="<?= BASE_URL ?>assets/img/mlane.jpg"
-                          alt="Img Profile"
-                        />
-                      </div>
-                      <div class="notif-content">
-                        <span class="subject">Jhon Doe</span>
-                        <span class="block">
-                          Ready for the meeting today...
-                        </span>
-                        <span class="time">12 minutes ago</span>
-                      </div>
-                    </a>
-                    <a href="#">
-                      <div class="notif-img">
-                        <img
-                          src="<?= BASE_URL ?>assets/img/talha.jpg"
-                          alt="Img Profile"
-                        />
-                      </div>
-                      <div class="notif-content">
-                        <span class="subject">Talha</span>
-                        <span class="block"> Hi, Apa Kabar ? </span>
-                        <span class="time">17 minutes ago</span>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <a class="see-all" href="javascript:void(0);"
-                  >See all messages<i class="fa fa-angle-right"></i>
-                </a>
-              </li>
             </ul>
           </li>
           <li class="nav-item topbar-icon dropdown hidden-caret">
@@ -181,31 +108,6 @@
               class="dropdown-menu notif-box animated fadeIn"
               aria-labelledby="notifDropdown"
             >
-              <li>
-                <div class="dropdown-title">
-                  You have 4 new notification
-                </div>
-              </li>
-              <li>
-                <div class="notif-scroll scrollbar-outer">
-                  <div class="notif-center">
-                    <a href="#">
-                      <div class="notif-icon notif-primary">
-                        <i class="fa fa-user-plus"></i>
-                      </div>
-                      <div class="notif-content">
-                        <span class="block"> New user registered </span>
-                        <span class="time">5 minutes ago</span>
-                      </div>
-                    </a>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <a class="see-all" href="javascript:void(0);"
-                  >See all notifications<i class="fa fa-angle-right"></i>
-                </a>
-              </li>
             </ul>
           </li>
           <li class="nav-item topbar-icon dropdown hidden-caret">
@@ -295,10 +197,9 @@
               aria-expanded="false"
             >
              <div class="avatar-sm">
-                <img src="<?= !empty($_SESSION['user']->profile_pic) ? BASE_URL . $_SESSION['user']->profile_pic : BASE_URL . 'assets/img/nightmode.jpg' ?>"
+                <img src="<?= BASE_URL ?>assets/img/nightmode.jpg"
                 alt="Profile picture"
                 class="avatar-img rounded-circle"
-                onerror="this.src='<?= BASE_URL ?>assets/img/Despecible me.jpg'"
                 />
             </div>
               <span class="profile-username">
@@ -319,7 +220,7 @@
                     </div>
                     <div class="u-text">
                       <h4>Kmt Hasan</h4>
-                      <p class="text-muted">hello@example.com</p>
+                      <p class="text-muted">kmthasan1715@gmail.com</p>
                       <a
                         href="#"
                         class="btn btn-xs btn-secondary btn-sm"
