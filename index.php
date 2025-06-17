@@ -568,7 +568,7 @@ require_once __DIR__ . '/requires/sidebar.php';
                 <div class="card card-chart">
                     <div class="card-header">
                         <div class="card-head-row">
-                            <div class="card-title">Sales & Purchases Trend (Last 12 Months)</div>
+                            <div class="card-title">Sales & Purchases Comparison (Last 12 Months)</div>
                             <div class="card-tools">
                                 <button class="btn btn-icon btn-round btn-light btn-sm" onclick="window.print()">
                                     <i class="fas fa-print"></i>
@@ -853,40 +853,34 @@ $(document).ready(function() {
     // Initialize tooltips
     $('[data-toggle="tooltip"]').tooltip();
     
-    // Sales & Purchases Chart with enhanced options
+    // Sales & Purchases Bar Chart
     var ctx = document.getElementById('salesPurchasesChart').getContext('2d');
     var chart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: <?= json_encode($chartLabels) ?>,
             datasets: [
                 {
                     label: 'Sales',
                     data: <?= json_encode($salesData) ?>,
+                    backgroundColor: 'rgba(23, 125, 255, 0.8)',
                     borderColor: '#177dff',
-                    backgroundColor: 'rgba(23, 125, 255, 0.05)',
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#177dff',
-                    pointHoverRadius: 6,
-                    pointHoverBorderWidth: 2,
-                    pointBorderColor: '#ffffff',
-                    tension: 0.3,
-                    fill: true
+                    borderWidth: 1,
+                    hoverBackgroundColor: 'rgba(23, 125, 255, 1)',
+                    hoverBorderColor: '#177dff',
+                    borderRadius: 4,
+                    barPercentage: 0.5
                 },
                 {
                     label: 'Purchases',
                     data: <?= json_encode($purchaseData) ?>,
+                    backgroundColor: 'rgba(243, 84, 93, 0.8)',
                     borderColor: '#f3545d',
-                    backgroundColor: 'rgba(243, 84, 93, 0.05)',
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#f3545d',
-                    pointHoverRadius: 6,
-                    pointHoverBorderWidth: 2,
-                    pointBorderColor: '#ffffff',
-                    tension: 0.3,
-                    fill: true
+                    borderWidth: 1,
+                    hoverBackgroundColor: 'rgba(243, 84, 93, 1)',
+                    hoverBorderColor: '#f3545d',
+                    borderRadius: 4,
+                    barPercentage: 0.5
                 }
             ]
         },
@@ -912,7 +906,8 @@ $(document).ready(function() {
                 x: {
                     grid: {
                         display: false
-                    }
+                    },
+                    stacked: false,
                 }
             },
             plugins: {
@@ -941,14 +936,11 @@ $(document).ready(function() {
                             label += '৳' + context.raw.toLocaleString();
                             return label;
                         }
-                    },
-                    mode: 'index',
-                    intersect: false
+                    }
                 }
             },
             interaction: {
-                mode: 'nearest',
-                axis: 'x',
+                mode: 'index',
                 intersect: false
             }
         }
@@ -961,7 +953,6 @@ $(document).ready(function() {
         // For now, just reload the page
         location.reload();
     }
-    
     // Add animation on scroll
     $(window).scroll(function() {
         $('.animate__animated').each(function() {
