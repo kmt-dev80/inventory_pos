@@ -87,6 +87,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td><?= htmlspecialchars($supplier->address) ?></td>
                                                 <td>
                                                     <div class="btn-group">
+                                                        <?php if ($_SESSION['user']->role == 'admin'): ?>
                                                         <a href="edit_supplier.php?id=<?= $supplier->id ?>" 
                                                            class="btn btn-sm btn-info" title="Edit">
                                                             <i class="fas fa-edit"></i>
@@ -96,6 +97,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                            onclick="return confirm('Are you sure you want to delete this supplier?')">
                                                             <i class="fas fa-trash"></i>
                                                         </a>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </td>
                                             </tr>

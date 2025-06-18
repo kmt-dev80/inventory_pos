@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Get user with login attempt tracking
         $res = $mysqli->common_select('users', 
-            'id, username, full_name, email, role, is_active, password, login_attempts, locked_until', 
+            'id, username, full_name, email, role, is_active, password, login_attempts, locked_until, profile_pic', 
             ['username' => $username]
         );
         
@@ -190,7 +190,7 @@ input:focus {
 }
 
 input[value]:not([value=""]) ~ label,
-input:focus ~ label {
+.stay-up {
   top: -10px;
   font-size: 0.8em;
   background: #1f293a;
@@ -307,5 +307,28 @@ label {
   <span style="--i:48;"></span>
   <span style="--i:49;"></span>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.input-box input');
+    
+    inputs.forEach(input => {
+        // Check if input has value on page load
+        if (input.value.trim() !== '') {
+            input.parentElement.querySelector('label').classList.add('stay-up');
+        }
+        
+        // Add event listener for input changes
+        input.addEventListener('input', function() {
+            const label = this.parentElement.querySelector('label');
+            if (this.value.trim() !== '') {
+                label.classList.add('stay-up');
+            } else {
+                label.classList.remove('stay-up');
+            }
+        });
+    });
+});
+</script>
 </body>
 </html>

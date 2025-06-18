@@ -140,6 +140,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = "File size exceeds 2MB limit";
             } elseif (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $file_path)) {
                 $user_data['profile_pic'] = 'uploads/profile_pics/' . $file_name;
+                
+                // Update session immediately if this is the current user
+                if ($user_id == $_SESSION['user']->id) {
+                    $_SESSION['user']->profile_pic = $user_data['profile_pic'];
+                }
             } else {
                 $errors[] = "Failed to upload profile picture";
             }
@@ -148,12 +153,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unlink(__DIR__ . '/../' . $user->profile_pic);
             }
             $user_data['profile_pic'] = null;
+            
+            // Update session immediately if this is the current user
+            if ($user_id == $_SESSION['user']->id) {
+                $_SESSION['user']->profile_pic = null;
+            }
         }
 
         if (empty($errors)) {
             $result = $mysqli->common_update('users', $user_data, ['id' => $user_id]);
 
             if ($result['error'] == 0) {
+                // Update all session data if editing current user
+                if ($user_id == $_SESSION['user']->id) {
+                    $_SESSION['user']->username = $username;
+                    $_SESSION['user']->email = $email;
+                    $_SESSION['user']->full_name = $full_name;
+                    $_SESSION['user']->role = $role;
+                    $_SESSION['user']->is_active = $is_active;
+                }
+                
                 $mysqli->common_insert('system_logs', [
                     'user_id' => $_SESSION['user']->id,
                     'ip_address' => $_SERVER['REMOTE_ADDR'],

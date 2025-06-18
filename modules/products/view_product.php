@@ -72,12 +72,14 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <td><?= number_format($product->sell_price, 2) ?></td>
                                             <td>
                                                 <div class="btn-group">
+                                                    <?php if ($_SESSION['user']->role == 'admin'): ?>
                                                     <a href="edit_product.php?id=<?= $product->id ?>" class="btn btn-sm btn-info">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     <a href="delete_product.php?id=<?= $product->id ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>

@@ -3,7 +3,7 @@
     <!-- Logo Header -->
     <div class="logo-header" data-background-color="dark">
         <a href="<?= BASE_URL ?>index.php" class="logo">
-          <img src="<?= BASE_URL ?>assets/img/kaiadmin/logo_light.svg" alt="navbar brand" class="navbar-brand" height="20" onerror="this.src='<?= BASE_URL ?>assets/img/kaiadmin/logo_light.svg'; this.onerror=null;" />
+          <img src="<?= BASE_URL ?>assets/img/invpos.gif" alt="navbar brand" class="navbar-brand" height="20" onerror="this.src='<?= BASE_URL ?>assets/img/invpos.gif'; this.onerror=null;" />
         </a>
       <div class="nav-toggle">
         <button class="btn btn-toggle toggle-sidebar">

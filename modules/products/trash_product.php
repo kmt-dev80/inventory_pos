@@ -97,12 +97,14 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <td><?= date('M d, Y h:i A', strtotime($product->deleted_at)) ?></td>
                                             <td>
                                                 <div class="btn-group">
+                                                    <?php if ($_SESSION['user']->role == 'admin'): ?>
                                                     <a href="trash_product.php?restore=<?= $product->id ?>" class="btn btn-sm btn-success" onclick="return confirm('Restore this product?')">
                                                         <i class="fas fa-undo"></i> Restore
                                                     </a>
                                                     <a href="trash_product.php?delete=<?= $product->id ?>" class="btn btn-sm btn-danger" onclick="return confirm('Permanently delete this product?')">
                                                         <i class="fas fa-trash-alt"></i> Delete
                                                     </a>
+                                                    <?php endif; ?>
                                                 </div>
                                             </td>
                                         </tr>

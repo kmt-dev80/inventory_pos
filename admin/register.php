@@ -78,12 +78,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mkdir($upload_dir, 0755, true);
             }
             
-            $file_ext = pathinfo($_FILES['profile_pic']['name'], PATHINFO_EXTENSION);
-            $file_name = uniqid('profile_') . '.' . $file_ext;
+            $file_ext = strtolower(pathinfo($_FILES['profile_pic']['name'], PATHINFO_EXTENSION));
+            $file_name = "user_{$user_id}_" . uniqid() . ".{$file_ext}";
             $file_path = $upload_dir . $file_name;
-            
-            if (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $file_path)) {
+
+
+            $valid_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+            $max_size = 2 * 1024 * 1024; // 2MB
+
+            if (!in_array($file_ext, $valid_extensions)) {
+                $errors[] = "Invalid file type. Only JPG, PNG, and GIF are allowed";
+            } elseif ($_FILES['profile_pic']['size'] > $max_size) {
+                $errors[] = "File size exceeds 2MB limit";
+            } elseif (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $file_path)) {
                 $user_data['profile_pic'] = 'uploads/profile_pics/' . $file_name;
+            } else {
+                $errors[] = "Failed to upload profile picture";
             }
         }
 

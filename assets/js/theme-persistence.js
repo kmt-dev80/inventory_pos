@@ -80,12 +80,8 @@ function loadThemeSettings() {
 
 // Update logo based on header color
 function customCheckColor() {
-  var logoHeader = $(".logo-header").attr("data-background-color");
-  if (logoHeader === "white") {
-    $(".logo-header .navbar-brand").attr("src", "assets/img/kaiadmin/logo_dark.svg");
-  } else {
-    $(".logo-header .navbar-brand").attr("src", "assets/img/kaiadmin/logo_light.svg");
-  }
+  // Force logo to always be invpos.gif (ignore theme-based changes)
+  $(".logo-header .navbar-brand").attr("src", "<?= BASE_URL ?>assets/img/invpos.gif");
 }
 
 // Update checkmarks for selected buttons

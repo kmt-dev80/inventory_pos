@@ -294,9 +294,9 @@ $products_with_stock = array_map(function($p) use ($mysqli_connection) {
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Customer</label>
+                                        <label>Customer Name</label>
                                         <div class="customer-search-container">
-                                            <input type="text" class="form-control" id="customerSearch" name="customer_name" placeholder="Search customer by name" autocomplete="off">
+                                            <input type="text" class="form-control" id="customerSearch" name="customer_name" placeholder="Search customer by name, number, email..." autocomplete="off">
                                             <div id="customerResults" class="customer-results"></div>
                                         </div>
                                         <input type="hidden" id="customerId" name="customer_id">

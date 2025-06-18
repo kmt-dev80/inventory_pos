@@ -28,6 +28,11 @@ $purchase = $purchase_result['data'][0];
 $items_result = $mysqli->common_select('purchase_items', '*', ['purchase_id' => $purchase_id]);
 $items = $items_result['data'];
 
+// Get payments
+$payments_result = $mysqli->common_select('purchase_payment', '*', ['purchase_id' => $purchase_id]);
+$payments = $payments_result['data'] ?? [];
+$total_paid = array_sum(array_column($payments, 'amount'));
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $mysqli->begin_transaction();
@@ -42,7 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'subtotal' => $_POST['subtotal'],
             'vat' => $_POST['vat'],
             'discount' => $_POST['discount'],
-            'total' => $_POST['total']
+            'total' => $_POST['total'],
+            'user_id' => $_SESSION['user']->id
         ];
         
         $update_result = $mysqli->common_update('purchase', $purchase_data, ['id' => $purchase_id]);
@@ -63,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'quantity' => $product['quantity'],
                 'unit_price' => $product['price'],
                 'discount' => $product['discount'] ?? 0,
-                //'subtotal' => $product['subtotal'],
                 'vat' => $product['vat'] ?? 0,
                 'total_price' => $product['total']
             ];
@@ -71,19 +76,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $item_result = $mysqli->common_insert('purchase_items', $item_data);
             if ($item_result['error']) throw new Exception($item_result['error_msg']);
             
-            // Update stock
+            // Update stock with discounted price (excluding VAT)
+            $discounted_price = $product['price'] * (1 - ($product['discount'] ?? 0) / 100);
             $stock_data = [
                 'product_id' => $product['id'],
                 'user_id' => $_SESSION['user']->id,
                 'change_type' => 'purchase',
                 'qty' => $product['quantity'],
-                'price' => $product['price'],
+                'price' => $discounted_price,
                 'purchase_id' => $purchase_id,
                 'note' => 'Purchase updated'
             ];
             
             $stock_result = $mysqli->common_insert('stock', $stock_data);
             if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
+        }
+        
+        // Handle payment if status changed to paid/partial
+        if (($_POST['payment_status'] == 'paid' || $_POST['payment_status'] == 'partial') && isset($_POST['amount_paid']) && $_POST['amount_paid'] > 0) {
+            $payment_data = [
+                'supplier_id' => $_POST['supplier_id'],
+                'purchase_id' => $purchase_id,
+                'type' => 'payment',
+                'amount' => $_POST['amount_paid'],
+                'payment_method' => $_POST['payment_method']
+            ];
+            
+            $payment_result = $mysqli->common_insert('purchase_payment', $payment_data);
+            if ($payment_result['error']) throw new Exception($payment_result['error_msg']);
         }
         
         $mysqli->commit();
@@ -152,11 +172,18 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label>Payment Status *</label>
-                                        <select class="form-control" name="payment_status" required>
+                                        <select class="form-control" name="payment_status" id="paymentStatus" required>
                                             <option value="pending" <?= $purchase->payment_status == 'pending' ? 'selected' : '' ?>>Pending</option>
                                             <option value="partial" <?= $purchase->payment_status == 'partial' ? 'selected' : '' ?>>Partial</option>
                                             <option value="paid" <?= $purchase->payment_status == 'paid' ? 'selected' : '' ?>>Paid</option>
                                         </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4" id="amountPaidField" style="<?= ($purchase->payment_status == 'paid' || $purchase->payment_status == 'partial') ? '' : 'display:none;' ?>">
+                                    <div class="form-group">
+                                        <label>Amount Paid *</label>
+                                        <input type="number" class="form-control" name="amount_paid" step="0.01" min="0" 
+                                            value="<?= $total_paid > 0 ? $total_paid : ($purchase->payment_status == 'paid' ? $purchase->total : '') ?>">
                                     </div>
                                 </div>
                             </div>
@@ -166,6 +193,9 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <div class="row">
                                 <div class="col-md-12">
                                     <h5>Purchase Items</h5>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-primary" id="addItemBtn">Add Item</button>
+                                    </div>
                                     <table class="table table-bordered" id="itemTable">
                                         <thead>
                                             <tr>
@@ -181,8 +211,8 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <tbody id="itemTbody">
                                             <?php foreach ($items as $item): 
                                                 $product = $mysqli->common_select('products', '*', ['id' => $item->product_id])['data'][0] ?? null;
-                                                $discount_percent = $item->subtotal > 0 ? ($item->discount / $item->subtotal * 100) : 0;
-                                                $vat_percent = ($item->subtotal - $item->discount) > 0 ? ($item->vat / ($item->subtotal - $item->discount) * 100) : 0;
+                                                $discount_percent = ($item->unit_price * $item->quantity) > 0 ? ($item->discount / ($item->unit_price * $item->quantity) * 100) : 0;
+                                                $vat_percent = (($item->unit_price * $item->quantity) - $item->discount) > 0 ? ($item->vat / (($item->unit_price * $item->quantity) - $item->discount) * 100) : 0;
                                             ?>
                                                 <tr id="row<?= $item->id ?>">
                                                     <td>
@@ -231,17 +261,13 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td></td>
                                             </tr>
                                             <tr>
-                                                <td colspan="5" class="text-right"><strong>Total</strong></td>
+                                                <td colspan="5" class="text-right"><strong>Grand Total</strong></td>
                                                 <td><input type="text" class="form-control" id="total" name="total" 
                                                     value="<?= $purchase->total ?>" readonly></td>
                                                 <td></td>
                                             </tr>
                                         </tfoot>
                                     </table>
-                                    
-                                    <div class="form-group">
-                                        <button type="button" class="btn btn-primary" id="addItemBtn">Add Item</button>
-                                    </div>
                                 </div>
                             </div>
                             
@@ -257,6 +283,17 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 
 <script>
 $(document).ready(function() {
+    // Payment status change handler
+    $('#paymentStatus').change(function() {
+        if ($(this).val() === 'paid' || $(this).val() === 'partial') {
+            $('#amountPaidField').show();
+            $('input[name="amount_paid"]').attr('required', true);
+        } else {
+            $('#amountPaidField').hide();
+            $('input[name="amount_paid"]').attr('required', false);
+        }
+    });
+    
     // Add item button handler
     $('#addItemBtn').click(function() {
         const rowId = Date.now();
@@ -313,7 +350,9 @@ $(document).ready(function() {
         });
         
         // Trigger initial calculation for existing rows
-        $(`#row${rowId} .quantity`).trigger('change');
+        if ($(`#row${rowId} .quantity`).val()) {
+            $(`#row${rowId} .quantity`).trigger('change');
+        }
     }
     
     function calculateRowTotal(rowId) {
@@ -362,4 +401,4 @@ $(document).ready(function() {
 });
 </script>
 
-<?php include __DIR__ . '/../../requires/footer.php'; ?>
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>

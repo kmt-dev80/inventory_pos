@@ -9,7 +9,7 @@
     />
     <link
       rel="icon"
-      href="<?= BASE_URL ?>assets/img/kaiadmin/favicon.ico"
+      href="<?= BASE_URL ?>assets/img/invpos.gif"
       type="image/x-icon"
     />
 
@@ -40,7 +40,6 @@
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/plugins.min.css" />
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/kaiadmin.min.css" />
 
-    <!-- CSS Just for demo purpose, don't include it in your project -->
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/dark-mode.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css">
