@@ -10,20 +10,21 @@ require_once __DIR__ . '/../../db_plugin.php';
 $query = "SELECT 
     p.id, p.name, p.barcode, p.sell_price, 
     COALESCE(SUM(s.qty), 0) AS current_stock,
-    CASE 
-        WHEN SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty ELSE 0 END) = 0 
-        THEN p.price
-        ELSE 
-            SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty * s.price ELSE 0 END) 
-            / 
-            SUM(CASE WHEN s.change_type IN ('purchase', 'adjustment') THEN s.qty ELSE 0 END)
-    END AS avg_cost_price
+    COALESCE(
+        (SELECT s.price 
+         FROM stock s 
+         WHERE s.product_id = p.id 
+           AND s.change_type = 'purchase' 
+           AND s.qty > 0
+         ORDER BY s.created_at DESC 
+         LIMIT 1),
+        p.price
+    ) AS cost_price
 FROM products p
 LEFT JOIN stock s ON p.id = s.product_id
 WHERE p.is_deleted = 0
 GROUP BY p.id
-ORDER BY p.name
-";
+ORDER BY p.name";
 
 $products = $mysqli->getConnection()->query($query);
 require_once __DIR__ . '/../../requires/header.php';
@@ -76,7 +77,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 <tbody>
                                     <?php while($product = $products->fetch_object()): 
                                         // Use avg_cost_price instead of price for calculations
-                                        $cost_price = $product->avg_cost_price ?? $product->price ?? 0;
+                                        $cost_price = $product->cost_price ?? $product->price ?? 0;
                                         $stock_value = ($product->current_stock ?? 0) * $cost_price;
                                         $stock_class = '';
                                         

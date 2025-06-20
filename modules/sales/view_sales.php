@@ -53,6 +53,15 @@ require_once __DIR__ . '/../../requires/sidebar.php';
             <div class="col-md-12 grid-margin">
                 <div class="card">
                     <div class="card-body">
+                        <?php if (isset($_SESSION['error'])): ?>
+                            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
+                            <?php unset($_SESSION['error']); ?>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($_SESSION['success'])): ?>
+                            <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success']) ?></div>
+                            <?php unset($_SESSION['success']); ?>
+                        <?php endif; ?>
                         
                         <!-- Filter Form -->
                         <form method="GET" class="mb-4">
