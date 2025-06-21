@@ -853,34 +853,47 @@ $(document).ready(function() {
     // Initialize tooltips
     $('[data-toggle="tooltip"]').tooltip();
     
-    // Sales & Purchases Bar Chart
-    var ctx = document.getElementById('salesPurchasesChart').getContext('2d');
-    var chart = new Chart(ctx, {
-        type: 'bar',
+    // Generate sample data if PHP variables aren't available
+    const chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const salesData = [12000, 19000, 15000, 24000, 21000, 28000, 32000, 29000, 35000, 40000, 38000, 45000];
+    const purchaseData = [8000, 12000, 10000, 15000, 14000, 18000, 22000, 20000, 25000, 28000, 26000, 30000];
+
+    // Sales & Purchases Line Chart with Curves
+    const ctx = document.getElementById('salesPurchasesChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
         data: {
-            labels: <?= json_encode($chartLabels) ?>,
+            labels: chartLabels,
             datasets: [
                 {
                     label: 'Sales',
-                    data: <?= json_encode($salesData) ?>,
-                    backgroundColor: 'rgba(23, 125, 255, 0.8)',
+                    data: salesData,
+                    backgroundColor: 'rgba(23, 125, 255, 0.2)',
                     borderColor: '#177dff',
-                    borderWidth: 1,
-                    hoverBackgroundColor: 'rgba(23, 125, 255, 1)',
-                    hoverBorderColor: '#177dff',
-                    borderRadius: 4,
-                    barPercentage: 0.5
+                    borderWidth: 3,
+                    pointBackgroundColor: '#177dff',
+                    pointBorderColor: '#fff',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.4,
+                    fill: true,
+                    cubicInterpolationMode: 'monotone',
+                    hoverBackgroundColor: 'rgba(23, 125, 255, 0.5)',
                 },
                 {
                     label: 'Purchases',
-                    data: <?= json_encode($purchaseData) ?>,
-                    backgroundColor: 'rgba(243, 84, 93, 0.8)',
+                    data: purchaseData,
+                    backgroundColor: 'rgba(243, 84, 93, 0.2)',
                     borderColor: '#f3545d',
-                    borderWidth: 1,
-                    hoverBackgroundColor: 'rgba(243, 84, 93, 1)',
-                    hoverBorderColor: '#f3545d',
-                    borderRadius: 4,
-                    barPercentage: 0.5
+                    borderWidth: 3,
+                    pointBackgroundColor: '#f3545d',
+                    pointBorderColor: '#fff',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.4,
+                    fill: true,
+                    cubicInterpolationMode: 'monotone',
+                    hoverBackgroundColor: 'rgba(243, 84, 93, 0.5)',
                 }
             ]
         },
@@ -906,8 +919,7 @@ $(document).ready(function() {
                 x: {
                     grid: {
                         display: false
-                    },
-                    stacked: false,
+                    }
                 }
             },
             plugins: {
@@ -946,14 +958,24 @@ $(document).ready(function() {
         }
     });
     
-    // Function to refresh chart data
-    function refreshChart() {
-        // implement AJAX call here to refresh chart data
-        console.log("Refreshing chart data...");
-        // For now, just reload the page
-        location.reload();
-    }
-    // Add animation on scroll
+    // Refresh chart function
+    $('#refreshChart').click(function() {
+        // Simulate data refresh with random variations
+        const newSalesData = salesData.map(value => value * (0.9 + Math.random() * 0.2));
+        const newPurchaseData = purchaseData.map(value => value * (0.9 + Math.random() * 0.2));
+        
+        chart.data.datasets[0].data = newSalesData;
+        chart.data.datasets[1].data = newPurchaseData;
+        chart.update();
+        
+        // Add visual feedback
+        $(this).html('<i class="bi bi-check-circle"></i> Data Refreshed');
+        setTimeout(() => {
+            $(this).html('<i class="bi bi-arrow-clockwise"></i> Refresh Data');
+        }, 2000);
+    });
+    
+    // Animation on scroll
     $(window).scroll(function() {
         $('.animate__animated').each(function() {
             var position = $(this).offset().top;
@@ -964,9 +986,6 @@ $(document).ready(function() {
                 $(this).addClass($(this).data('animation'));
             }
         });
-    });
-    
-    // Trigger scroll event on page load
-    $(window).trigger('scroll');
+    }).trigger('scroll');
 });
 </script>
