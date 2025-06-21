@@ -6,7 +6,7 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php';
 
-$start_date = $_GET['start_date'] ?? date('Y-m-01');
+$start_date = $_GET['start_date'] ?? date('Y-01-01');
 $end_date = $_GET['end_date'] ?? date('Y-m-t');
 
 $query = "

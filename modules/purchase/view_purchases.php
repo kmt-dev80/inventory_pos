@@ -8,11 +8,10 @@ require_once __DIR__ . '/../../db_plugin.php';
 
 // Get filter parameters
 $supplier_id = $_GET['supplier_id'] ?? '';
-$start_date = $_GET['start_date'] ?? date('Y-m-01');
+$start_date = $_GET['start_date'] ?? date('Y-01-01');
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 $status = $_GET['status'] ?? '';
 
-// Build where conditions with proper operators
 $where = [
     'purchase_date >=' => $start_date . ' 00:00:00',
     'purchase_date <=' => $end_date . ' 23:59:59'

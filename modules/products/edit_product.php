@@ -124,15 +124,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                     <div class="card-header">
                         <div class="card-title">Product Information</div>
                     </div>
-                    <div class="card-body">
-                        <?php if ($error): ?>
-                            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-                        <?php endif; ?>
-                        
-                        <?php if ($success): ?>
-                            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-                        <?php endif; ?>
-                        
+                    <div class="card-body"> 
                         <form method="post" id="productForm">
                             <div class="row">
                                 <div class="col-md-6">

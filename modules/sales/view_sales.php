@@ -8,8 +8,9 @@ require_once __DIR__ . '/../../db_plugin.php';
 
 // Get filter parameters - Modified defaults to show recent sales
 $customer_id = $_GET['customer_id'] ?? '';
-$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days')); // Last 30 days by default
+$start_date = $_GET['start_date'] ?? date('Y-01-01');
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
+//$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days')); // Last 30 days by default
 $status = $_GET['status'] ?? '';
 
 // Build where conditions - Modified to include time component
