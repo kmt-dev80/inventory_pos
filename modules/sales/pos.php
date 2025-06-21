@@ -13,14 +13,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         // Handle customer creation/selection
         $customer_id = null;
-        if (!empty($_POST['customer_name'])) {
-            // Check if customer exists
-            $customer_result = $mysqli->common_select('customers', 'id', ['name' => $_POST['customer_name']]);
+        if (!empty($_POST['customer_name']) || !empty($_POST['customer_phone']) || !empty($_POST['customer_email'])) {
+            // Check if customer exists by phone or email
+            $where = [];
+            if (!empty($_POST['customer_phone'])) {
+                $where['phone'] = $_POST['customer_phone'];
+            }
+            if (!empty($_POST['customer_email'])) {
+                $where['email'] = $_POST['customer_email'];
+            }
             
-            if ($customer_result['error'] || empty($customer_result['data'])) {
-                // Create new customer if not exists
+            if (!empty($where)) {
+                $customer_result = $mysqli->common_select('customers', 'id', $where, '', 'OR');
+                
+                if (!$customer_result['error'] && !empty($customer_result['data'])) {
+                    $customer_id = $customer_result['data'][0]->id;
+                }
+            }
+            
+            // Create new customer if not exists
+            if (!$customer_id) {
                 $new_customer = [
-                    'name' => $_POST['customer_name'],
+                    'name' => $_POST['customer_name'] ?: 'Unknown Customer',
                     'phone' => $_POST['customer_phone'] ?? null,
                     'email' => $_POST['customer_email'] ?? null
                 ];
@@ -29,8 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($customer_result['error']) throw new Exception("Failed to create customer: " . $customer_result['error_msg']);
                 
                 $customer_id = $customer_result['data'];
-            } else {
-                $customer_id = $customer_result['data'][0]->id;
             }
         }
 

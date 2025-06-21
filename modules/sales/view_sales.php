@@ -6,14 +6,13 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php';
 
-// Get filter parameters - Modified defaults to show recent sales
+// Get filter parameters
 $customer_id = $_GET['customer_id'] ?? '';
 $start_date = $_GET['start_date'] ?? date('Y-01-01');
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
-//$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days')); // Last 30 days by default
 $status = $_GET['status'] ?? '';
 
-// Build where conditions - Modified to include time component
+// Build where conditions
 $where = [];
 $where['created_at >='] = $start_date . ' 00:00:00';
 $where['created_at <='] = $end_date . ' 23:59:59';
@@ -22,15 +21,22 @@ if ($customer_id) {
     $where['customer_id'] = $customer_id;
 }
 
+if ($phone) {
+    $where['phone'] = $phone;
+}
+
 if ($status) {
     $where['payment_status'] = $status;
 }
 
-// Get sales - Modified to ensure proper ordering
+// Get sales
 $sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data'];
 
 // Get customers for filter dropdown
-$customers = $mysqli->common_select('customers', 'id, name', [], 'name ASC')['data'];
+$customers = $mysqli->common_select('customers', 'id, name, phone', [], 'name ASC')['data'];
+
+// Get unique phone numbers for dropdown
+$phone_numbers = $mysqli->common_select('customers', 'DISTINCT phone', [], 'phone ASC')['data'];
 
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
@@ -119,6 +125,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <th>Invoice No</th>
                                         <th>Date</th>
                                         <th>Customer</th>
+                                        <th>Phone</th>
                                         <th>Total</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -127,17 +134,18 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 <tbody>
                                     <?php if (empty($sales)): ?>
                                         <tr>
-                                            <td colspan="6" class="text-center">No sales found for the selected criteria</td>
+                                            <td colspan="7" class="text-center">No sales found for the selected criteria</td>
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($sales as $sale): 
                                             $customer = $sale->customer_id ? 
-                                                $mysqli->common_select('customers', 'name', ['id' => $sale->customer_id])['data'][0] : null;
+                                                $mysqli->common_select('customers', 'name, phone', ['id' => $sale->customer_id])['data'][0] : null;
                                         ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($sale->invoice_no) ?></td>
                                                 <td><?= date('d M Y H:i', strtotime($sale->created_at)) ?></td>
                                                 <td><?= htmlspecialchars($customer ? $customer->name : ($sale->customer_name ?: 'Walk-in')) ?></td>
+                                                <td><?= htmlspecialchars($customer ? $customer->phone : $sale->phone) ?></td>
                                                 <td><?= number_format($sale->total, 2) ?></td>
                                                 <td>
                                                     <span class="badge badge-<?= 
@@ -150,10 +158,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                 <td>
                                                     <a href="sale_details.php?id=<?= $sale->id ?>" class="btn btn-info btn-sm">View</a>
                                                     <a href="print_invoice.php?id=<?= $sale->id ?>" target="_blank" class="btn btn-secondary btn-sm">Print</a>
-                                                    <?php if ($_SESSION['user']->role == 'admin'): ?>
-                                                        <a href="edit_sale.php?id=<?= $sale->id ?>" class="btn btn-primary btn-sm">Edit</a>
-                                                        <a href="sales_payment.php?id=<?= $sale->id ?>" class="btn btn-warning btn-sm">Payments</a>
-                                                    <?php endif; ?>
+                                                    <a href="sales_payment.php?id=<?= $sale->id ?>" class="btn btn-warning btn-sm">Payments</a>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -168,4 +173,3 @@ require_once __DIR__ . '/../../requires/sidebar.php';
     </div>
 </div>
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
-
