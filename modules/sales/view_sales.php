@@ -21,10 +21,6 @@ if ($customer_id) {
     $where['customer_id'] = $customer_id;
 }
 
-if ($phone) {
-    $where['phone'] = $phone;
-}
-
 if ($status) {
     $where['payment_status'] = $status;
 }
@@ -35,8 +31,6 @@ $sales = $mysqli->common_select('sales', '*', $where, 'created_at DESC')['data']
 // Get customers for filter dropdown
 $customers = $mysqli->common_select('customers', 'id, name, phone', [], 'name ASC')['data'];
 
-// Get unique phone numbers for dropdown
-$phone_numbers = $mysqli->common_select('customers', 'DISTINCT phone', [], 'phone ASC')['data'];
 
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
