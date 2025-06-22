@@ -56,7 +56,7 @@ $query = "
             END
         ), 0) AS purchase_return_qty,
         
-        -- Sales during period
+        -- Sales during period (quantity and value)
         COALESCE(SUM(
             CASE 
                 WHEN s.change_type = 'sale' THEN -s.qty
@@ -64,13 +64,27 @@ $query = "
             END
         ), 0) AS sold_qty,
         
-        -- Sales returns during period
+        COALESCE(SUM(
+            CASE 
+                WHEN s.change_type = 'sale' THEN -s.qty * s.price
+                ELSE 0
+            END
+        ), 0) AS sold_value,
+        
+        -- Sales returns during period (quantity and value)
         COALESCE(SUM(
             CASE 
                 WHEN s.change_type = 'sales_return' THEN s.qty
                 ELSE 0
             END
         ), 0) AS sales_return_qty,
+        
+        COALESCE(SUM(
+            CASE 
+                WHEN s.change_type = 'sales_return' THEN s.qty * s.price
+                ELSE 0
+            END
+        ), 0) AS sales_return_value,
         
         -- Adjustments (add) during period
         COALESCE(SUM(
@@ -98,21 +112,12 @@ $query = "
         
         -- Purchase values
         COALESCE(SUM(
-    CASE 
-        WHEN s.change_type = 'purchase' THEN s.qty * s.price
-        WHEN s.change_type = 'purchase_return' THEN s.qty * s.price
-        ELSE 0
-    END
-), 0) AS total_purchase_cost,
-        
-        -- Sales values
-        COALESCE(SUM(
             CASE 
-                WHEN s.change_type = 'sale' THEN -s.qty * s.price
-                WHEN s.change_type = 'sales_return' THEN s.qty * s.price
+                WHEN s.change_type = 'purchase' THEN s.qty * s.price
+                WHEN s.change_type = 'purchase_return' THEN s.qty * s.price
                 ELSE 0
             END
-        ), 0) AS total_sale_value,
+        ), 0) AS total_purchase_cost,
         
         -- COGS calculation - now based on NET sales (sales minus returns)
         (
@@ -193,15 +198,19 @@ foreach ($product_data as $product) {
                             + $product->adjustment_add_qty 
                             - abs($product->adjustment_remove_qty);
     
-    // Calculate net sales quantity (sold minus returns)
-    $net_sales_qty = abs($product->sold_qty) - $product->sales_return_qty;
-    
-    // Calculate sales values
-    $total_qty_combined = abs($product->sold_qty) + $product->sales_return_qty;
-    $unit_price_estimated = $total_qty_combined > 0 ? $product->total_sale_value / $total_qty_combined : 0;
-    $sale_value = abs($product->sold_qty) * $unit_price_estimated;
-    $return_value = $product->sales_return_qty * $unit_price_estimated;
+    // Calculate values using actual prices from database
+    $sale_value = abs($product->sold_value);
+    $return_value = $product->sales_return_value;
     $net_sales = $sale_value - $return_value;
+    $profit = $net_sales - $product->cogs;
+    $margin = $net_sales != 0 ? ($profit / $net_sales) * 100 : 0;
+    
+    // Store calculated values
+    $product->sale_value = $sale_value;
+    $product->return_value = $return_value;
+    $product->net_sales = $net_sales;
+    $product->profit = $profit;
+    $product->margin = $margin;
     
     // Update totals
     $total_initial_stock += $product->initial_stock;
@@ -213,17 +222,19 @@ foreach ($product_data as $product) {
     $total_adjustment_remove_qty += abs($product->adjustment_remove_qty);
     $total_current_stock += $product->current_stock;
     $total_purchase_cost += $product->total_purchase_cost;
-    $total_sale_value += $product->total_sale_value;
-    $total_cogs += $product->cogs;
     $total_sales_value_only += $sale_value;
     $total_sales_return_value_only += $return_value;
+    $total_cogs += $product->cogs;
 }
+
 $net_sales_value = $total_sales_value_only - $total_sales_return_value_only;
 $total_profit = $net_sales_value - $total_cogs;
+
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
 ?>
+
 <div class="container">
     <div class="page-inner">
          <div class="page-header">
@@ -238,172 +249,164 @@ require_once __DIR__ . '/../../requires/sidebar.php';
             </div>
         </div>
 
-  <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h5 class="card-title mb-0">Detailed Stock Movement & Profit Report</h5>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="card-title mb-0">Detailed Stock Movement & Profit Report</h5>
+                            </div>
+                            <div class="col-md-6">
+                                <form method="GET" class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="form-group mb-0">
+                                            <label class="mr-2">From</label>
+                                            <input type="date" name="start_date" value="<?= $start_date ?>" class="form-control form-control">
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="form-group mb-0">
+                                            <label class="mr-2">To</label>
+                                            <input type="date" name="end_date" value="<?= $end_date ?>" class="form-control form-control">
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="submit" class="btn btn-primary">Filter</button>
+                                    </div>
+                                    <div class="col-auto">
+                                       <a href="profit_loss.php" class="btn btn-secondary">Reset</a>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <form method="GET" class="row align-items-center">
-                                <div class="col-auto">
-                                    <div class="form-group mb-0">
-                                        <label class="mr-2">From</label>
-                                        <input type="date" name="start_date" value="<?= $start_date ?>" class="form-control form-control">
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Gross Sales</h5>
+                                        <h2><?= number_format($total_sales_value_only, 2) ?></h2>
                                     </div>
                                 </div>
-                                <div class="col-auto">
-                                    <div class="form-group mb-0">
-                                        <label class="mr-2">To</label>
-                                        <input type="date" name="end_date" value="<?= $end_date ?>" class="form-control form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Sales Returns</h5>
+                                        <h2><?= number_format($total_sales_return_value_only, 2) ?></h2>
                                     </div>
                                 </div>
-                                <div class="col-auto">
-                                    <button type="submit" class="btn btn-primary">Filter</button>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Net Sales</h5>
+                                        <h2><?= number_format($net_sales_value, 2) ?></h2>
+                                    </div>
                                 </div>
-                                <div class="col-auto">
-                                   <a href="profit_loss.php" class="btn btn-secondary">Reset</a>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">Gross Sales</h5>
-                                    <h2><?= number_format($total_sales_value_only, 2) ?></h2>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-secondary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">COGS</h5>
+                                        <h2><?= number_format($total_cogs, 2) ?></h2>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">Sales Returns</h5>
-                                    <h2><?= number_format($total_sales_return_value_only, 2) ?></h2>
+                        <div class="row mb-4">
+                            <div class="col-md-4 offset-md-2">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Gross Profit</h5>
+                                        <h2><?= number_format($total_profit, 2) ?></h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-secondary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Profit Margin</h5>
+                                        <h2><?= $net_sales_value != 0 ? number_format(($total_profit / $net_sales_value) * 100, 2) . '%' : '0%' ?></h2>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card bg-info text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">Net Sales</h5>
-                                    <h2><?= number_format($net_sales_value, 2) ?></h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-secondary text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">COGS</h5>
-                                    <h2><?= number_format($total_cogs, 2) ?></h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-md-4 offset-md-2">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">Gross Profit</h5>
-                                    <h2><?= number_format($total_profit, 2) ?></h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-secondary text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">Profit Margin</h5>
-                                    <h2><?= $net_sales_value != 0 ? number_format(($total_profit / $net_sales_value) * 100, 2) . '%' : '0%' ?></h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="table-responsive">
-                        <table id="profitLossTable" class="display table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Barcode</th>
-                                    <th>Initial Stock</th>
-                                    <th>Purchased</th>
-                                    <th>P.Returns</th>
-                                    <th>Sold</th>
-                                    <th>S.Returns</th>
-                                    <th>Adj (+)</th>
-                                    <th>Adj (-)</th>
-                                    <th>Current Stock</th>
-                                    <th>Purchase Cost</th>
-                                    <th>Sales Value</th>
-                                    <th>S.Return Value</th>
-                                    <th>Net Sales</th>
-                                    <th>COGS</th>
-                                    <th>Profit</th>
-                                    <th>Margin</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($product_data as $product): 
-                                    // Calculate product-level values
-                                    $total_qty_combined = abs($product->sold_qty) + $product->sales_return_qty;
-                                    $unit_price_estimated = $total_qty_combined > 0 ? $product->total_sale_value / $total_qty_combined : 0;
-                                    $sale_value = abs($product->sold_qty) * $unit_price_estimated;
-                                    $return_value = $product->sales_return_qty * $unit_price_estimated;
-                                    $net_sales = $sale_value - $return_value;
-                                    $profit = $net_sales - $product->cogs;
-                                    $margin = $net_sales != 0 ? ($profit / $net_sales) * 100 : 0;
-                                ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($product->name) ?></td>
-                                    <td><?= $product->barcode ?></td>
-                                    <td><?= $product->initial_stock ?></td>
-                                    <td><?= $product->purchased_qty ?></td>
-                                    <td><?= abs($product->purchase_return_qty) ?></td>
-                                    <td><?= abs($product->sold_qty) ?></td>
-                                    <td><?= $product->sales_return_qty ?></td>
-                                    <td><?= $product->adjustment_add_qty ?></td>
-                                    <td><?= abs($product->adjustment_remove_qty) ?></td>
-                                    <td><?= $product->current_stock ?></td>
-                                    <td><?= number_format($product->total_purchase_cost, 2) ?></td>
-                                    <td><?= number_format($sale_value, 2) ?></td>
-                                    <td><?= number_format($return_value, 2) ?></td>
-                                    <td><?= number_format($net_sales, 2) ?></td>
-                                    <td><?= number_format($product->cogs, 2) ?></td>
-                                    <td class="<?= $profit >= 0 ? 'text-success' : 'text-danger' ?>">
-                                        <?= number_format($profit, 2) ?>
-                                    </td>
-                                    <td><?= number_format($margin, 2) ?>%</td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <th colspan="2">Totals</th>
-                                    <th><?= $total_initial_stock ?></th>
-                                    <th><?= $total_purchased_qty ?></th>
-                                    <th><?= $total_purchase_return_qty ?></th>
-                                    <th><?= $total_sold_qty ?></th>
-                                    <th><?= $total_sales_return_qty ?></th>
-                                    <th><?= $total_adjustment_add_qty ?></th>
-                                    <th><?= $total_adjustment_remove_qty ?></th>
-                                    <th><?= $total_current_stock ?></th>
-                                    <th><?= number_format($total_purchase_cost, 2) ?></th>
-                                    <th><?= number_format($total_sales_value_only, 2) ?></th>
-                                    <th><?= number_format($total_sales_return_value_only, 2) ?></th>
-                                    <th><?= number_format($net_sales_value, 2) ?></th>
-                                    <th><?= number_format($total_cogs, 2) ?></th>
-                                    <th class="<?= $total_profit >= 0 ? 'text-success' : 'text-danger' ?>">
-                                        <?= number_format($total_profit, 2) ?>
-                                    </th>
-                                    <th><?= $net_sales_value != 0 ? number_format(($total_profit / $net_sales_value) * 100, 2) . '%' : '0%' ?></th>
-                                </tr>
-                            </tfoot>
-                        </table>
+                        <div class="table-responsive">
+                            <table id="profitLossTable" class="display table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Barcode</th>
+                                        <th>Initial Stock</th>
+                                        <th>Purchased</th>
+                                        <th>P.Returns</th>
+                                        <th>Sold</th>
+                                        <th>S.Returns</th>
+                                        <th>Adj (+)</th>
+                                        <th>Adj (-)</th>
+                                        <th>Current Stock</th>
+                                        <th>Purchase Cost</th>
+                                        <th>Sales Value</th>
+                                        <th>S.Return Value</th>
+                                        <th>Net Sales</th>
+                                        <th>COGS</th>
+                                        <th>Profit</th>
+                                        <th>Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($product_data as $product): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($product->name) ?></td>
+                                        <td><?= $product->barcode ?></td>
+                                        <td><?= $product->initial_stock ?></td>
+                                        <td><?= $product->purchased_qty ?></td>
+                                        <td><?= abs($product->purchase_return_qty) ?></td>
+                                        <td><?= abs($product->sold_qty) ?></td>
+                                        <td><?= $product->sales_return_qty ?></td>
+                                        <td><?= $product->adjustment_add_qty ?></td>
+                                        <td><?= abs($product->adjustment_remove_qty) ?></td>
+                                        <td><?= $product->current_stock ?></td>
+                                        <td><?= number_format($product->total_purchase_cost, 2) ?></td>
+                                        <td><?= number_format($product->sale_value, 2) ?></td>
+                                        <td><?= number_format($product->return_value, 2) ?></td>
+                                        <td><?= number_format($product->net_sales, 2) ?></td>
+                                        <td><?= number_format($product->cogs, 2) ?></td>
+                                        <td class="<?= $product->profit >= 0 ? 'text-success' : 'text-danger' ?>">
+                                            <?= number_format($product->profit, 2) ?>
+                                        </td>
+                                        <td><?= number_format($product->margin, 2) ?>%</td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Totals</th>
+                                        <th><?= $total_initial_stock ?></th>
+                                        <th><?= $total_purchased_qty ?></th>
+                                        <th><?= $total_purchase_return_qty ?></th>
+                                        <th><?= $total_sold_qty ?></th>
+                                        <th><?= $total_sales_return_qty ?></th>
+                                        <th><?= $total_adjustment_add_qty ?></th>
+                                        <th><?= $total_adjustment_remove_qty ?></th>
+                                        <th><?= $total_current_stock ?></th>
+                                        <th><?= number_format($total_purchase_cost, 2) ?></th>
+                                        <th><?= number_format($total_sales_value_only, 2) ?></th>
+                                        <th><?= number_format($total_sales_return_value_only, 2) ?></th>
+                                        <th><?= number_format($net_sales_value, 2) ?></th>
+                                        <th><?= number_format($total_cogs, 2) ?></th>
+                                        <th class="<?= $total_profit >= 0 ? 'text-success' : 'text-danger' ?>">
+                                            <?= number_format($total_profit, 2) ?>
+                                        </th>
+                                        <th><?= $net_sales_value != 0 ? number_format(($total_profit / $net_sales_value) * 100, 2) . '%' : '0%' ?></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
