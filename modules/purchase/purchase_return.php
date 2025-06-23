@@ -6,7 +6,6 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php';
 
-// Get purchase ID
 if (!isset($_GET['id'])) {
     header("Location: view_purchases.php");
     exit();
@@ -14,7 +13,6 @@ if (!isset($_GET['id'])) {
 
 $purchase_id = (int)$_GET['id'];
 
-// Get purchase details
 $purchase_result = $mysqli->common_select('purchase', '*', ['id' => $purchase_id]);
 if ($purchase_result['error'] || empty($purchase_result['data'])) {
     $_SESSION['error'] = "Purchase not found!";
@@ -30,10 +28,8 @@ if (($purchase->subtotal - $purchase->discount) > 0) {
     $vat_rate = ($purchase->vat / ($purchase->subtotal - $purchase->discount)) * 100;
 }
 
-// Get supplier details
 $supplier = $mysqli->common_select('suppliers', '*', ['id' => $purchase->supplier_id])['data'][0] ?? null;
 
-// Get purchase items
 $items_result = $mysqli->common_select('purchase_items', '*', ['purchase_id' => $purchase_id]);
 $items = $items_result['data'];
 
@@ -41,7 +37,6 @@ $items = $items_result['data'];
 $total_purchase_qty = array_sum(array_column($items, 'quantity'));
 $discount_per_unit = $total_purchase_qty > 0 ? ($purchase->discount / $total_purchase_qty) : 0;
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $mysqli->begin_transaction();
 
@@ -53,8 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'refund_amount' => 0,
             'vat_amount' => 0,
             'discount_adjusted' => 0,
-            'vat_rate_used' => $vat_rate, // Use the calculated rate
-            'original_vat_amount' => $purchase->vat,
+            'vat_rate_used' => $vat_rate,
             'refund_method' => $_POST['refund_method'],
             'user_id' => $_SESSION['user']->id
         ];
@@ -81,38 +75,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             if (!$original_item) continue;
 
-            // Validate return quantity
             $available_qty = (int)($product['available_qty'] ?? 0);
             $max_returnable = min($original_item->quantity, $available_qty);
             if ($return_qty > $max_returnable) {
                 throw new Exception("Cannot return more than purchased/available quantity for product ID {$original_item->product_id}");
             }
 
-            // In your item processing loop:
             $discounted_price = $original_item->unit_price - $discount_per_unit;
             $vat_amount = ($discounted_price * $vat_rate) / 100;
             $total_per_unit = $discounted_price + $vat_amount;
 
-            $item_refund = $total_per_unit * $return_qty; // This already includes VAT
-            $item_vat_reversed = $vat_amount * $return_qty; // This is just for tracking
+            $item_refund = $total_per_unit * $return_qty;
+            $item_vat_reversed = $vat_amount * $return_qty;
             $item_discount_adjusted = $discount_per_unit * $return_qty;
 
-            $total_refund += $item_refund; // Already includes VAT
-            $total_vat_reversed += $item_vat_reversed; // Just for record keeping
+            $total_refund += $item_refund;
+            $total_vat_reversed += $item_vat_reversed;
             $total_discount_adjusted += $item_discount_adjusted;
 
-            // Insert return item
             $item_data = [
                 'purchase_return_id' => $return_id,
                 'product_id' => $original_item->product_id,
                 'quantity' => $return_qty,
-                'unit_price' => $discounted_price,
-                'vat_amount' => $vat_amount,
-                'vat_rate_used' => $vat_rate,
-                'total_price' => $total_per_unit * $return_qty,
-                'original_price' => $original_item->unit_price,
-                'original_discount' => $item_discount_adjusted,
-                'original_vat_amount' => ($original_item->unit_price * $return_qty * $vat_rate) / 100
+                'unit_price' => $total_per_unit,
+                'total_price' => $item_refund
             ];
 
             $item_result = $mysqli->common_insert('purchase_return_items', $item_data);
@@ -133,7 +119,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
         }
 
-        // Update return with calculated totals
         $return_update = [
             'refund_amount' => $total_refund,
             'vat_amount' => $total_vat_reversed,
@@ -142,7 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $update_result = $mysqli->common_update('purchase_returns', $return_update, ['id' => $return_id]);
         if ($update_result['error']) throw new Exception($update_result['error_msg']);
 
-        // Process payment/credit if not exchange
         if (in_array($_POST['refund_method'], ['cash', 'bank_transfer'])) {
             $payment_data = [
                 'supplier_id' => $purchase->supplier_id,
@@ -159,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         $mysqli->commit();
-        $_SESSION['success'] = "Purchase return processed successfully with accurate VAT calculations!";
+        $_SESSION['success'] = "Purchase return processed successfully!";
         header("Location: purchase_details.php?id=" . $purchase_id);
         exit();
     } catch (Exception $e) {
@@ -262,11 +246,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <th>Purchased Qty</th>
                                             <th>Available Qty</th>
                                             <th>Return Qty</th>
-                                            <th>Original Price</th>
-                                            <th>Discount</th>
-                                            <th>Net Price</th>
-                                            <th>VAT Rate</th>
-                                            <th>VAT Amount</th>
+                                            <th>Unit Price</th>
                                             <th>Total</th>
                                         </tr>
                                     </thead>
@@ -307,11 +287,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                                         data-discount-per-unit="<?= $discount_per_unit ?>"
                                                         data-vat-rate="<?= $vat_rate ?>">
                                                 </td>
-                                                <td><?= number_format($item->unit_price, 2) ?></td>
-                                                <td><?= number_format($discount_per_unit, 4) ?></td>
-                                                <td class="net-price">0.00</td>
-                                                <td><?= number_format($vat_rate, 2) ?>%</td>
-                                                <td class="vat-amount">0.00</td>
+                                                <td class="unit-price"><?= number_format($total_per_unit, 2) ?></td>
                                                 <td>
                                                     <input type="text" class="form-control return-total"
                                                         name="products[<?= $item->id ?>][return_total]"
@@ -322,17 +298,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="7" class="text-right"><strong>Subtotal (After Discount)</strong></td>
-                                            <td colspan="2"><strong>Total VAT</strong></td>
-                                            <td><strong>Total Refund</strong></td>
-                                        </tr>
-                                        <tr>
-                                            <td colspan="7" class="text-right">
-                                                <input type="text" class="form-control" id="subtotalRefund" value="0.00" readonly>
-                                            </td>
-                                            <td colspan="2">
-                                                <input type="text" class="form-control" id="vatTotal" value="0.00" readonly>
-                                            </td>
+                                            <td colspan="5" class="text-right"><strong>Total Refund</strong></td>
                                             <td>
                                                 <input type="text" class="form-control" id="totalRefund" name="refund_amount" value="0.00" readonly>
                                             </td>
@@ -357,52 +323,24 @@ require_once __DIR__ . '/../../requires/sidebar.php';
 $(document).ready(function() {
     // Calculate return amounts when quantities change
     $('.return-qty').on('input', function() {
-    const row = $(this).closest('tr');
-    const qty = parseFloat($(this).val()) || 0;
-    const originalPrice = parseFloat($(this).data('original-price')) || 0;
-    const discountPerUnit = parseFloat($(this).data('discount-per-unit')) || 0;
-    const vatRate = parseFloat($(this).data('vat-rate')) || 0;
-    
-    // Calculate financials
-    const netPrice = originalPrice - discountPerUnit;
-    const vatAmount = (netPrice * vatRate) / 100;
-    const totalPerUnit = netPrice + vatAmount;
-    
-    // Update row display
-    row.find('.net-price').text(netPrice.toFixed(2));
-    row.find('.vat-amount').text(vatAmount.toFixed(2));
-    row.find('.return-total').val((totalPerUnit * qty).toFixed(2));
-    
-    calculateTotalRefund();
-});
-
-    // Update the calculateTotalRefund function
-function calculateTotalRefund() {
-    let subtotalAfterDiscount = 0;
-    let vatTotal = 0;
-    let grandTotal = 0;
-    
-    $('tbody tr').each(function() {
-        const qty = parseFloat($(this).find('.return-qty').val()) || 0;
-        if (qty > 0) {
-            const originalPrice = parseFloat($(this).find('.return-qty').data('original-price')) || 0;
-            const discountPerUnit = parseFloat($(this).find('.return-qty').data('discount-per-unit')) || 0;
-            const vatRate = parseFloat($(this).find('.return-qty').data('vat-rate')) || 0;
-            
-            const netPrice = originalPrice - discountPerUnit;
-            const vatAmount = (netPrice * vatRate) / 100;
-            const totalPerUnit = netPrice + vatAmount;
-            
-            subtotalAfterDiscount += netPrice * qty;
-            vatTotal += vatAmount * qty;
-            grandTotal += totalPerUnit * qty;
-        }
+        const row = $(this).closest('tr');
+        const qty = parseFloat($(this).val()) || 0;
+        const unitPrice = parseFloat(row.find('.unit-price').text()) || 0;
+        const total = unitPrice * qty;
+        
+        row.find('.return-total').val(total.toFixed(2));
+        calculateTotalRefund();
     });
-    
-    $('#subtotalRefund').val(subtotalAfterDiscount.toFixed(2));
-    $('#vatTotal').val(vatTotal.toFixed(2));
-    $('#totalRefund').val(grandTotal.toFixed(2));
-}
+
+    function calculateTotalRefund() {
+        let grandTotal = 0;
+        
+        $('.return-total').each(function() {
+            grandTotal += parseFloat($(this).val()) || 0;
+        });
+        
+        $('#totalRefund').val(grandTotal.toFixed(2));
+    }
 
     // Form validation
     $('#returnForm').on('submit', function(e) {
@@ -413,7 +351,6 @@ function calculateTotalRefund() {
             return false;
         }
         
-        // Additional validation if needed
         let hasReturns = false;
         $('.return-qty').each(function() {
             if (parseFloat($(this).val()) > 0) {
