@@ -28,7 +28,7 @@ $sale = $sale_result['data'][0];
 $discount_factor = $sale->subtotal > 0 ? ($sale->discount / $sale->subtotal) : 0;
 $vat_factor = ($sale->subtotal - $sale->discount) > 0 ? ($sale->vat / ($sale->subtotal - $sale->discount)) : 0;
 
-// Get customer details
+
 $customer = $sale->customer_id ? 
     $mysqli->common_select('customers', '*', ['id' => $sale->customer_id])['data'][0] : null;
 
@@ -50,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $mysqli->begin_transaction();
     
     try {
-        // Calculate total refund amount (with VAT as per original sale)
         $total_refund = 0;
         foreach ($_POST['products'] as $product) {
             if ($product['return_qty'] > 0) {
@@ -58,12 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
-        // Create sales return record
         $return_data = [
             'sale_id' => $sale_id,
             'return_reason' => $_POST['return_reason'],
             'return_note' => $_POST['return_note'],
-            'refund_amount' => $total_refund, // Total with VAT
+            'refund_amount' => $total_refund,
             'refund_method' => $_POST['refund_method'],
             'user_id' => $_SESSION['user']->id,
             'invoice_no' => 'RTN-' . strtoupper(uniqid())
@@ -74,18 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $return_id = $return_result['data'];
         
-        // Insert return items
         foreach ($_POST['products'] as $product) {
             if ($product['return_qty'] > 0) {
                 $item_data = [
                     'sales_return_id' => $return_id,
                     'product_id' => $product['id'],
                     'quantity' => $product['return_qty'],
-                    'unit_price' => $product['price'], // Original unit price
-                    'discounted_price' => $product['discounted_price'], // Price after discount
-                    'vat_amount' => $product['vat_amount'], // VAT portion
-                    'total_price' => $product['return_total_with_vat'], // Total with VAT
-                    'total_price_ex_vat' => $product['return_total'] // Total without VAT
+                    'unit_price' => $product['price'],
+                    'discounted_price' => $product['discounted_price'],
+                    'vat_amount' => $product['vat_amount'],
+                    'total_price' => $product['return_total_with_vat'],
                 ];
                 
                 $item_result = $mysqli->common_insert('sales_return_items', $item_data);
@@ -97,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'user_id' => $_SESSION['user']->id,
                     'change_type' => 'sales_return',
                     'qty' => $product['return_qty'],
-                    'price' => $product['discounted_price'], // Store discounted price for COGS
+                    'price' => $product['discounted_price'],
                     'sales_return_id' => $return_id,
                     'note' => 'Sales return'
                 ];
@@ -107,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
         
-        // Record refund payment if applicable
+
         if ($_POST['refund_method'] == 'cash' || $_POST['refund_method'] == 'bank_transfer') {
             $payment_data = [
                 'customer_id' => $sale->customer_id,
@@ -266,10 +262,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="6" class="text-right"><strong>Total Refund Amount (Excluding VAT)</strong></td>
-                                            <td><input type="text" class="form-control" id="totalRefundExVat" value="0.00" readonly></td>
-                                        </tr>
-                                        <tr>
                                             <td colspan="6" class="text-right"><strong>Total VAT Amount</strong></td>
                                             <td><input type="text" class="form-control" id="totalVat" value="0.00" readonly></td>
                                         </tr>
@@ -299,32 +291,30 @@ $(document).ready(function() {
         const discounted_price = parseFloat($(this).data('price')) || 0;
         const vat_per_unit = parseFloat($(this).data('vat')) || 0;
         
-        const total_ex_vat = qty * discounted_price;
-        const total_vat = qty * vat_per_unit;
-        const total_with_vat = total_ex_vat + total_vat;
+        const total_with_vat = qty * (discounted_price + vat_per_unit);
         
-        $(this).closest('tr').find('.return-total').val(total_ex_vat.toFixed(2));
+        $(this).closest('tr').find('.return-total').val(total_with_vat.toFixed(2));
         $(this).closest('tr').find('.return-total-with-vat').val(total_with_vat.toFixed(2));
         
         calculateTotalRefund();
     });
     
     function calculateTotalRefund() {
-        let total_ex_vat = 0;
-        let total_vat = 0;
         let total_with_vat = 0;
-        
-        $('.return-total').each(function() {
-            total_ex_vat += parseFloat($(this).val()) || 0;
-        });
+        let total_vat = 0;
         
         $('.return-total-with-vat').each(function() {
-            total_with_vat += parseFloat($(this).val()) || 0;
+            const amount = parseFloat($(this).val()) || 0;
+            total_with_vat += amount;
         });
         
-        total_vat = total_with_vat - total_ex_vat;
+        // Calculate total VAT by summing all VAT amounts
+        $('[name*="[vat_amount]"]').each(function() {
+            const vat_per_unit = parseFloat($(this).val()) || 0;
+            const qty = parseFloat($(this).closest('tr').find('.return-qty').val()) || 0;
+            total_vat += vat_per_unit * qty;
+        });
         
-        $('#totalRefundExVat').val(total_ex_vat.toFixed(2));
         $('#totalVat').val(total_vat.toFixed(2));
         $('#totalRefund').val(total_with_vat.toFixed(2));
     }

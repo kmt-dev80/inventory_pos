@@ -48,14 +48,11 @@ $stmt->bind_param('i', $return_id);
 $stmt->execute();
 $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Calculate totals
-$total_ex_vat = 0;
 $total_vat = 0;
 $total_with_vat = $return['refund_amount'];
 
-// If you have VAT breakdown in items
+
 foreach ($items as $item) {
-    $total_ex_vat += $item['total_price_ex_vat'] ?? ($item['total_price'] / 1.15); // Adjust VAT rate as needed
     $total_vat += $item['vat_amount'] ?? ($item['total_price'] - ($item['total_price'] / 1.15));
 }
 
@@ -166,7 +163,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                         <th>Unit Price</th>
                                         <th>Discounted Price</th>
                                         <th>VAT Amount</th>
-                                        <th>Total (Ex VAT)</th>
                                         <th>Total (Inc VAT)</th>
                                     </tr>
                                 </thead>
@@ -174,7 +170,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                     <?php foreach ($items as $item): ?>
                                         <?php
                                         $item_vat = $item['vat_amount'] ?? ($item['total_price'] - ($item['total_price'] / 1.15));
-                                        $item_ex_vat = $item['total_price_ex_vat'] ?? ($item['total_price'] / 1.15);
                                         ?>
                                         <tr>
                                             <td><?= $item['product_name'] ?></td>
@@ -183,7 +178,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                             <td><?= number_format($item['unit_price'], 2) ?></td>
                                             <td><?= number_format($item['discounted_price'] ?? $item['unit_price'], 2) ?></td>
                                             <td><?= number_format($item_vat, 2) ?></td>
-                                            <td><?= number_format($item_ex_vat, 2) ?></td>
                                             <td><?= number_format($item['total_price'], 2) ?></td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -191,7 +185,6 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                                 <tfoot>
                                     <tr>
                                         <td colspan="6" class="text-right"><strong>Subtotal:</strong></td>
-                                        <td><?= number_format($total_ex_vat, 2) ?></td>
                                         <td><?= number_format($total_with_vat, 2) ?></td>
                                     </tr>
                                     <tr>
