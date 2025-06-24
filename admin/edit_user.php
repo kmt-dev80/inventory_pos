@@ -307,7 +307,7 @@ require_once __DIR__ . '/../requires/topbar.php';
                     <div class="card-body">
                         <div class="text-center mb-3">
                             <div class="avatar avatar-xxl">
-                                <img src="<?= !empty($user->profile_pic) ? BASE_URL . $user->profile_pic : BASE_URL . 'assets/img/Despecible me.jpg' ?>" 
+                                <img src="<?= !empty($user->profile_pic) ? BASE_URL . $user->profile_pic : BASE_URL . 'assets/img/user.png' ?>" 
                                      alt="Profile" class="avatar-img rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
                             </div>
                             <h4 class="mt-3"><?= htmlspecialchars($full_name) ?></h4>

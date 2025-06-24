@@ -4,7 +4,7 @@
       <!-- Logo Header -->
       <div class="logo-header" data-background-color="dark">
         <a href="<?= BASE_URL ?>index.php" class="logo">
-          <img src="<?= BASE_URL ?>assets/img/invpos.gif" alt="navbar brand" class="navbar-brand" height="20" onerror="this.src='<?= BASE_URL ?>assets/img/invpos.gif'; this.onerror=null;" />
+          <img src="<?= BASE_URL ?>assets/img/invpos.gif" alt="navbar brand" class="navbar-brand" height="20"/>
         </a>
         <div class="nav-toggle">
           <button class="btn btn-toggle toggle-sidebar">
@@ -192,10 +192,10 @@
               aria-expanded="false"
             >
              <div class="avatar-sm">
-                <img src="<?= BASE_URL ?><?= !empty($_SESSION['user']->profile_pic) ? $_SESSION['user']->profile_pic : 'assets/img/nightmode.jpg' ?>"
-                alt="Profile picture"
-                class="avatar-img rounded-circle"
-                />
+                <img src="<?= BASE_URL ?><?= !empty($_SESSION['user']->profile_pic) ? $_SESSION['user']->profile_pic : 'assets/img/user.png' ?>"
+                      alt="Profile picture"
+                      class="avatar-img rounded-circle"
+                  />
             </div><!--  
               <span class="profile-username">
                 <span class="op-7">Hi,</span>
@@ -207,7 +207,7 @@
                 <li>
                   <div class="user-box">
                     <div class="avatar-lg">
-                      <img src="<?= BASE_URL ?><?= !empty($_SESSION['user']->profile_pic) ? $_SESSION['user']->profile_pic : 'assets/img/nightmode.jpg' ?>"
+                      <img src="<?= BASE_URL ?><?= !empty($_SESSION['user']->profile_pic) ? $_SESSION['user']->profile_pic : 'assets/img/user.png' ?>"
                         alt="image profile"
                         class="avatar-img rounded"
                       />
