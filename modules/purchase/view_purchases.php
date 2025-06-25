@@ -40,8 +40,8 @@ $suppliers_result = $mysqli->common_select('suppliers');
 $suppliers = $suppliers_result['data'] ?? [];
 
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">

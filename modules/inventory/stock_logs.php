@@ -5,11 +5,9 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
     exit();
 }
 require_once __DIR__ . '/../../db_plugin.php'; 
-
-$title = "Stock Logs";
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">

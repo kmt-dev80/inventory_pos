@@ -16,25 +16,22 @@ if ($id <= 0) {
     exit();
 }
 
-// Check if any products exist under this category
+// Check if any products exist under this category (including soft-deleted ones)
 function hasProducts($mysqli, $type, $id) {
     switch ($type) {
         case 'main':
             return !empty($mysqli->common_select('products', 'id', [
-                'category_id' => $id,
-                'is_deleted' => 0
+                'category_id' => $id
             ])['data']);
         
         case 'sub':
             return !empty($mysqli->common_select('products', 'id', [
-                'sub_category_id' => $id,
-                'is_deleted' => 0
+                'sub_category_id' => $id
             ])['data']);
             
         case 'child':
             return !empty($mysqli->common_select('products', 'id', [
-                'child_category_id' => $id,
-                'is_deleted' => 0
+                'child_category_id' => $id
             ])['data']);
             
         default:
@@ -69,20 +66,16 @@ switch ($type) {
             }
         }
         
-        // Soft delete main category and all its sub/child categories
-        $mysqli->common_update('category', ['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s')], ['id' => $id]);
-        
+        // Delete all child categories first
         foreach ($sub_cats as $sub_cat) {
-            // Delete child categories first
-            $mysqli->common_update('child_category', 
-                ['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s')], 
-                ['sub_category_id' => $sub_cat->id]);
-            
-            // Then delete sub-category
-            $mysqli->common_update('sub_category', 
-                ['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s')], 
-                ['id' => $sub_cat->id]);
+            $mysqli->common_delete('child_category', ['sub_category_id' => $sub_cat->id]);
         }
+        
+        // Then delete all sub-categories
+        $mysqli->common_delete('sub_category', ['category_id' => $id]);
+        
+        // Finally delete the main category
+        $mysqli->common_delete('category', ['id' => $id]);
         
         $_SESSION['success'] = 'Main category and all its sub/child categories deleted successfully';
         break;
@@ -98,20 +91,18 @@ switch ($type) {
             }
         }
         
-        // Soft delete sub-category and all its child categories
-        $mysqli->common_update('sub_category', ['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s')], ['id' => $id]);
+        // Delete all child categories first
+        $mysqli->common_delete('child_category', ['sub_category_id' => $id]);
         
-        // Delete all child categories
-        $mysqli->common_update('child_category', 
-            ['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s')], 
-            ['sub_category_id' => $id]);
+        // Then delete the sub-category
+        $mysqli->common_delete('sub_category', ['id' => $id]);
         
         $_SESSION['success'] = 'Sub-category and all its child categories deleted successfully';
         break;
         
     case 'child':
-        // Soft delete only the child category
-        $mysqli->common_update('child_category', ['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s')], ['id' => $id]);
+        // Delete only the child category
+        $mysqli->common_delete('child_category', ['id' => $id]);
         $_SESSION['success'] = 'Child category deleted successfully';
         break;
         

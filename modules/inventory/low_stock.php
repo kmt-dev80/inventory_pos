@@ -38,8 +38,8 @@ $stmt->execute();
 $products = $stmt->get_result();
 
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 <div class="container">
     <div class="page-inner">

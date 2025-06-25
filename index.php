@@ -189,9 +189,8 @@ foreach ($monthlyPurchases as $purchase) {
 }
 
 require_once __DIR__ . '/requires/header.php';
-require_once __DIR__ . '/requires/topbar.php';
 require_once __DIR__ . '/requires/sidebar.php';
-
+require_once __DIR__ . '/requires/topbar.php';
 ?>
 <style>
     /* Gradient Cards */

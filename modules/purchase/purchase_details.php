@@ -54,8 +54,8 @@ $balance = $purchase->total - $paid_amount;
 $total_refunded = $refund_amount;
 
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">

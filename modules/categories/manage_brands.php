@@ -158,8 +158,8 @@ $result = $mysqli->common_select('brand', '*', $where, 'brand_name', 'asc');
 $brands = $result['error'] ? [] : $result['data'];
 
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">

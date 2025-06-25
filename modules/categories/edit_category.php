@@ -33,7 +33,8 @@ if ($edit_main > 0) {
     if (!$result['error'] && !empty($result['data'])) {
         $category_data = $result['data'][0];
         // Get main categories for dropdown
-        $main_categories = $mysqli->common_select('category', '*', ['is_deleted' => 0], 'category', 'asc')['data'];
+        $main_result = $mysqli->common_select('category', '*', ['is_deleted' => 0], 'category', 'asc');
+        $main_categories = !$main_result['error'] ? $main_result['data'] : [];
     } else {
         $_SESSION['error'] = 'Sub-category not found';
         header("Location: view_categories.php");
@@ -44,18 +45,23 @@ if ($edit_main > 0) {
     $result = $mysqli->common_select('child_category', '*', ['id' => $edit_child]);
     if (!$result['error'] && !empty($result['data'])) {
         $category_data = $result['data'][0];
-        // Get main and sub categories for dropdowns
-        $main_categories = $mysqli->common_select('category', '*', ['is_deleted' => 0], 'category', 'asc')['data'];
         
-        // First get the sub category to determine which main category is selected
-        $sub_category_result = $mysqli->common_select('sub_category', '*', ['id' => $category_data->sub_category_id]);
-        if (!$sub_category_result['error'] && !empty($sub_category_result['data'])) {
-            $current_sub_category = $sub_category_result['data'][0];
-            $current_main_category_id = $current_sub_category->category_id;
+        // Get all main categories
+        $main_result = $mysqli->common_select('category', '*', ['is_deleted' => 0], 'category', 'asc');
+        $main_categories = !$main_result['error'] ? $main_result['data'] : [];
+        
+        // Get current sub category to determine main category
+        $sub_result = $mysqli->common_select('sub_category', '*', ['id' => $category_data->sub_category_id]);
+        if (!$sub_result['error'] && !empty($sub_result['data'])) {
+            $current_sub = $sub_result['data'][0];
+            $current_main_id = $current_sub->category_id;
             
-            // Get all sub categories for the current main category
-            $sub_categories = $mysqli->common_select('sub_category', '*', 
-                ['category_id' => $current_main_category_id, 'is_deleted' => 0])['data'];
+            // Get sub categories for the current main category
+            $subs_result = $mysqli->common_select('sub_category', '*', [
+                'category_id' => $current_main_id,
+                'is_deleted' => 0
+            ], 'category_name', 'asc');
+            $sub_categories = !$subs_result['error'] ? $subs_result['data'] : [];
         } else {
             $_SESSION['error'] = 'Parent sub-category not found';
             header("Location: view_categories.php");
@@ -66,6 +72,32 @@ if ($edit_main > 0) {
         header("Location: view_categories.php");
         exit();
     }
+}
+
+// Handle AJAX requests for dynamic dropdowns
+if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+    header('Content-Type: application/json');
+    $response = ['success' => false];
+    
+    if (isset($_GET['get_sub_categories'])) {
+        $main_id = (int)$_GET['main_category_id'];
+        if ($main_id > 0) {
+            $result = $mysqli->common_select('sub_category', '*', [
+                'category_id' => $main_id,
+                'is_deleted' => 0
+            ], 'category_name', 'asc');
+            
+            if (!$result['error']) {
+                $response = [
+                    'success' => true,
+                    'data' => $result['data']
+                ];
+            }
+        }
+    }
+    
+    echo json_encode($response);
+    exit();
 }
 
 // Handle form submission
@@ -154,8 +186,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">
@@ -166,15 +198,24 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                 <i class="fas fa-arrow-left"></i> Back to Categories
             </a>
         </div>
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['error']) ?></div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
         
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success']) ?></div>
-            <?php unset($_SESSION['success']); ?>
-        <?php endif; ?>
+        <div id="alertContainer">
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars($_SESSION['error']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['error']); ?>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars($_SESSION['success']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['success']); ?>
+            <?php endif; ?>
+        </div>
         
         <div class="row">
             <div class="col-md-8">
@@ -183,8 +224,7 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                         <div class="card-title">Category Information</div>
                     </div>
                     <div class="card-body">
-                        
-                        <form method="post">
+                        <form method="post" id="editCategoryForm">
                             <div class="form-group">
                                 <label for="name"><?= ucfirst($category_type) ?> Category Name *</label>
                                 <input type="text" class="form-control" id="name" name="name" 
@@ -194,12 +234,11 @@ require_once __DIR__ . '/../../requires/sidebar.php';
                             <?php if ($category_type === 'child'): ?>
                                 <div class="form-group">
                                     <label for="main_category_id">Main Category *</label>
-                                    <select class="form-control" id="main_category_id" name="main_category_id" required 
-                                            onchange="updateSubCategories(this.value)">
+                                    <select class="form-control" id="main_category_id" name="main_category_id" required>
                                         <option value="">Select Main Category</option>
                                         <?php foreach ($main_categories as $main_cat): ?>
                                             <option value="<?= $main_cat->id ?>" 
-                                                <?= isset($current_main_category_id) && $current_main_category_id == $main_cat->id ? 'selected' : '' ?>>
+                                                <?= isset($current_main_id) && $current_main_id == $main_cat->id ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($main_cat->category) ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -251,31 +290,47 @@ require_once __DIR__ . '/../../requires/sidebar.php';
         </div>
     </div>
 </div>
-
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <?php if ($category_type === 'child'): ?>
 <script>
-function updateSubCategories(mainCategoryId) {
-    if (mainCategoryId) {
-        $.ajax({
-            url: 'add_category.php',
-            data: {get_sub_categories: 1, category_id: mainCategoryId},
-            dataType: 'json',
-            success: function(data) {
-                var options = '<option value="">Select Sub Category</option>';
-                $.each(data, function(key, value) {
-                    options += '<option value="' + value.id + '">' + value.category_name + '</option>';
-                });
-                $('#sub_category_id').html(options);
-            },
-            error: function() {
-                $('#sub_category_id').html('<option value="">Error loading sub-categories</option>');
-            }
-        });
-    } else {
-        $('#sub_category_id').html('<option value="">Select Sub Category</option>');
-    }
-}
+$(document).ready(function() {
+    // Function to update sub categories when main category changes
+    $('#main_category_id').change(function() {
+        var mainId = $(this).val();
+        if (mainId) {
+            $.ajax({
+                url: window.location.href,
+                type: 'GET',
+                data: {
+                    get_sub_categories: 1,
+                    main_category_id: mainId
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        var options = '<option value="">Select Sub Category</option>';
+                        $.each(response.data, function(index, subCategory) {
+                            options += '<option value="' + subCategory.id + '">' + 
+                                subCategory.category_name + '</option>';
+                        });
+                        $('#sub_category_id').html(options);
+                    } else {
+                        $('#sub_category_id').html('<option value="">No sub categories found</option>');
+                    }
+                },
+                error: function() {
+                    $('#sub_category_id').html('<option value="">Error loading sub categories</option>');
+                }
+            });
+        } else {
+            $('#sub_category_id').html('<option value="">Select Main Category First</option>');
+        }
+    });
+    
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        $('.alert').fadeOut('slow');
+    }, 5000);
+});
 </script>
 <?php endif; ?>
-
-<?php require_once __DIR__ . '/../../requires/footer.php'; ?>

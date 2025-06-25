@@ -34,8 +34,8 @@ $history = $mysqli->getConnection()->query($query);
 // Calculate current stock
 $current_stock = $mysqli->getConnection()->query("SELECT COALESCE(SUM(qty), 0) as stock FROM stock WHERE product_id = $product_id")->fetch_object()->stock;
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">

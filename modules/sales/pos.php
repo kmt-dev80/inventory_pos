@@ -142,8 +142,8 @@ $customers = $mysqli->common_select('customers', 'id, name, phone, email', [], '
 $products = $mysqli->common_select('products', '*', ['is_deleted' => 0])['data'];
 
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 
 $mysqli_connection = $mysqli;
 $products_with_stock = array_map(function($p) use ($mysqli_connection) {

@@ -27,9 +27,10 @@ GROUP BY p.id
 ORDER BY p.name";
 
 $products = $mysqli->getConnection()->query($query);
+
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">

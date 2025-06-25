@@ -13,9 +13,10 @@ $query = "SELECT a.*, p.name as product_name, u.full_name as user_name
           JOIN users u ON a.user_id = u.id
           ORDER BY a.created_at DESC";
 $adjustments = $mysqli->getConnection()->query($query);
+
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">

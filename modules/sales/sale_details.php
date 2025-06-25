@@ -52,8 +52,8 @@ $net_paid = $total_payments - $total_refunds;
 $balance_due = $sale->total - $total_payments; // Balance based only on payments, not refunds
 
 require_once __DIR__ . '/../../requires/header.php';
-require_once __DIR__ . '/../../requires/topbar.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
+require_once __DIR__ . '/../../requires/topbar.php';
 ?>
 
 <div class="container">
