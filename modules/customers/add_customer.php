@@ -29,7 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => $name,
                 'phone' => $phone,
                 'email' => $email,
-                'address' => $address
+                'address' => $address,
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION[$user]->id
             ];
             
             $result = $mysqli->common_insert('customers', $data);

@@ -43,7 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => $name,
                 'phone' => $phone,
                 'email' => $email,
-                'address' => $address
+                'address' => $address,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_by' => $_SESSION[$user]->id
             ];
             
             $result = $mysqli->common_update('customers', $data, ['id' => $customer_id]);

@@ -105,7 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'user_id' => $_SESSION['user']->id,
                 'ip_address' => $_SERVER['REMOTE_ADDR'],
                 'category' => 'user',
-                'message' => "Created new user: $username ($role)"
+                'message' => "Created new user: $username ($role)",
+                'created_at' => date('Y-m-d H:i:s')
             ]);
             
             $success = true;
@@ -115,9 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-require_once __DIR__ . '/requires/header.php';
-require_once __DIR__ . '/requires/sidebar.php';
-require_once __DIR__ . '/requires/topbar.php';
+require_once __DIR__ . '/../requires/header.php';
+require_once __DIR__ . '/../requires/sidebar.php';
+require_once __DIR__ . '/../requires/topbar.php';
 ?>
 <div class="container">
     <div class="page-inner">

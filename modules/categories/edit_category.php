@@ -152,7 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Prepare update data
             $update_data = [
                 'details' => $details,
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_by' => $_SESSION['user']->id
             ];
             
             switch ($category_type) {

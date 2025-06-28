@@ -50,7 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'discount_adjusted' => 0,
             'vat_rate_used' => $vat_rate,
             'refund_method' => $_POST['refund_method'],
-            'user_id' => $_SESSION['user']->id
+            'user_id' => $_SESSION['user']->id,
+            'created_at' => date('Y-m-d H:i:s')
         ];
 
         $return_result = $mysqli->common_insert('purchase_returns', $return_data);
@@ -98,7 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'product_id' => $original_item->product_id,
                 'quantity' => $return_qty,
                 'unit_price' => $total_per_unit,
-                'total_price' => $item_refund
+                'total_price' => $item_refund,
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
 
             $item_result = $mysqli->common_insert('purchase_return_items', $item_data);
@@ -112,7 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'qty' => -$return_qty,
                 'price' => $discounted_price,
                 'purchase_return_id' => $return_id,
-                'note' => 'Purchase return'
+                'note' => 'Purchase return',
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
 
             $stock_result = $mysqli->common_insert('stock', $stock_data);
@@ -135,7 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'type' => 'return',
                 'amount' => $total_refund,
                 'payment_method' => $_POST['refund_method'],
-                'description' => 'Refund for purchase return #' . $purchase->reference_no
+                'description' => 'Refund for purchase return #' . $purchase->reference_no,
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
 
             $payment_result = $mysqli->common_insert('purchase_payment', $payment_data);

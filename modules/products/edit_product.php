@@ -67,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'brand_id' => (int)($_POST['brand_id'] ?? 0),
         'price' => (float)($_POST['price'] ?? 0),
         'sell_price' => (float)($_POST['sell_price'] ?? 0),
-        'updated_at' => date('Y-m-d H:i:s')
+        'updated_at' => date('Y-m-d H:i:s'),
+        'updated_by' => $_SESSION['user']->id
     ];
 
     if (empty($update_data['name'])) {

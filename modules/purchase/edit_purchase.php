@@ -48,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'vat' => $_POST['vat'],
             'discount' => $_POST['discount'],
             'total' => $_POST['total'],
-            'user_id' => $_SESSION['user']->id
+            'user_id' => $_SESSION['user']->id,
+            'updated_at' => date('Y-m-d H:i:s')
         ];
         
         $update_result = $mysqli->common_update('purchase', $purchase_data, ['id' => $purchase_id]);
@@ -73,7 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'unit_price' => $product['price'],
                 'discount' => $product['discount'] ?? 0,
                 'vat' => $product['vat'] ?? 0,
-                'total_price' => $product['total']
+                'total_price' => $product['total'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $item_result = $mysqli->common_insert('purchase_items', $item_data);
@@ -88,7 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'qty' => $product['quantity'],
                 'price' => $discounted_price,
                 'purchase_id' => $purchase_id,
-                'note' => 'Purchase updated'
+                'note' => 'Purchase updated',
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $stock_result = $mysqli->common_insert('stock', $stock_data);
@@ -102,7 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'purchase_id' => $purchase_id,
                 'type' => 'payment',
                 'amount' => $_POST['amount_paid'],
-                'payment_method' => $_POST['payment_method']
+                'payment_method' => $_POST['payment_method'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $payment_result = $mysqli->common_insert('purchase_payment', $payment_data);

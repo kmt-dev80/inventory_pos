@@ -31,7 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'phone' => $phone,
                 'email' => $email,
                 'address' => $address,
-                'company_name' => $company_name
+                'company_name' => $company_name,
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $result = $mysqli->common_insert('suppliers', $data);

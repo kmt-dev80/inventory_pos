@@ -91,7 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'refund_amount' => $total_refund,
             'refund_method' => $_POST['refund_method'],
             'user_id' => $_SESSION['user']->id,
-            'invoice_no' => 'RTN-' . strtoupper(uniqid())
+            'invoice_no' => 'RTN-' . strtoupper(uniqid()),
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $_SESSION['user']->id
         ];
         
         $return_result = $mysqli->common_insert('sales_returns', $return_data);
@@ -109,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'discounted_price' => $product['discounted_price'],
                 'vat_amount' => $product['vat_amount'],
                 'total_price' => $product['return_total_with_vat'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $item_result = $mysqli->common_insert('sales_return_items', $item_data);
@@ -147,7 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'price' => $product['discounted_price'], // Selling price after discount
                     'sales_return_id' => $return_id,
                     'batch_id' => $batch['id'], // Reference original batch
-                    'note' => 'Sales return'
+                    'note' => 'Sales return',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $_SESSION['user']->id
                 ];
                 
                 $stock_result = $mysqli->common_insert('stock', $stock_data);
@@ -164,7 +170,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'type' => 'return',
                 'amount' => $total_refund,
                 'payment_method' => $_POST['refund_method'],
-                'description' => 'Refund for return #' . $return_data['invoice_no']
+                'description' => 'Refund for return #' . $return_data['invoice_no'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $payment_result = $mysqli->common_insert('sales_payment', $payment_data);

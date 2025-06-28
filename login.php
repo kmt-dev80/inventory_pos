@@ -56,7 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'ip_address' => $_SERVER['REMOTE_ADDR'],
                             'action' => 'login',
                             'details' => 'Successful login',
-                            'status' => 'success'
+                            'status' => 'success',
+                            'created_at' => date('Y-m-d H:i:s')
                         ]);
                         
                         header("Location: index.php");
@@ -89,7 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'ip_address' => $_SERVER['REMOTE_ADDR'],
                         'action' => 'login',
                         'details' => 'Failed login attempt',
-                        'status' => 'failure'
+                        'status' => 'failure',
+                        'created_at' => date('Y-m-d H:i:s')
                     ]);
                 }
             }

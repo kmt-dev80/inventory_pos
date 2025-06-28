@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'vat' => $_POST['vat'],
             'discount' => $_POST['discount'],
             'total' => $_POST['total'],
+            'created_at' => date('Y-m-d H:i:s'),
             'user_id' => $_SESSION['user']->id
         ];
         
@@ -39,7 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'discount' => $product['discount'] ?? 0,
                 //'subtotal' => $product['subtotal'],
                 'vat' => $product['vat'] ?? 0,
-                'total_price' => $product['total']
+                'total_price' => $product['total'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $item_result = $mysqli->common_insert('purchase_items', $item_data);
@@ -54,7 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'qty' => $product['quantity'],
                 'price' => $discounted_price, // Using discounted price without VAT
                 'purchase_id' => $purchase_id,
-                'note' => 'Purchase added'
+                'note' => 'Purchase added',
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
 
             $stock_result = $mysqli->common_insert('stock', $stock_data);
@@ -68,7 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'purchase_id' => $purchase_id,
                 'type' => 'payment',
                 'amount' => $_POST['amount_paid'],
-                'payment_method' => $_POST['payment_method']
+                'payment_method' => $_POST['payment_method'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $payment_result = $mysqli->common_insert('purchase_payment', $payment_data);

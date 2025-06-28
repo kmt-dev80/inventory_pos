@@ -34,7 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $new_customer = [
                     'name' => $_POST['customer_name'] ?: 'Unknown Customer',
                     'phone' => $_POST['customer_phone'] ?? null,
-                    'email' => $_POST['customer_email'] ?? null
+                    'email' => $_POST['customer_email'] ?? null,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $_SESSION['user']->id
                 ];
                 
                 $customer_result = $mysqli->common_insert('customers', $new_customer);
@@ -56,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'discount' => $_POST['discount'],
             'total' => $_POST['total'],
             'payment_status' => $_POST['payment_status'],
-            'user_id' => $_SESSION['user']->id
+            'user_id' => $_SESSION['user']->id,
+            'created_at' => date('Y-m-d H:i:s')
         ];
         
         $sale_result = $mysqli->common_insert('sales', $sale_data);
@@ -70,7 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'product_id' => $product['id'],
                 'quantity' => $product['quantity'],
                 'unit_price' => $product['price'],
-                'total_price' => $product['total']
+                'total_price' => $product['total'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $item_result = $mysqli->common_insert('sale_items', $item_data);
@@ -125,7 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'price' => $discountedPricePerUnit,
                     'sale_id' => $sale_id,
                     'batch_id' => $batch['id'], // Reference to original batch
-                    'note' => 'POS Sale(FIFO)'
+                    'note' => 'POS Sale(FIFO)',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $_SESSION['user']->id
                 ];
 
                 $stock_result = $mysqli->common_insert('stock', $stock_data);
@@ -141,7 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'type' => 'payment',
                 'amount' => $_POST['amount_paid'],
                 'payment_method' => $_POST['payment_method'],
-                'description' => 'Payment for invoice #' . $sale_data['invoice_no']
+                'description' => 'Payment for invoice #' . $sale_data['invoice_no'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $payment_result = $mysqli->common_insert('sales_payment', $payment_data);

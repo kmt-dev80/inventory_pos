@@ -35,7 +35,9 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
                     } else {
                         $data = [
                             'category' => $category,
-                            'details' => $details
+                            'details' => $details,
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'created_by' => $_SESSION['user']->id
                         ];
                         $result = $mysqli->common_insert('category', $data);
                         if (!$result['error']) {
@@ -97,7 +99,9 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
                         $data = [
                             'category_id' => $main_category_id,
                             'category_name' => $sub_category_name,
-                            'details' => $sub_category_details
+                            'details' => $sub_category_details,
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'created_by' => $_SESSION['user']->id
                         ];
                         $result = $mysqli->common_insert('sub_category', $data);
                         if (!$result['error']) {
@@ -162,7 +166,9 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
                         $data = [
                             'sub_category_id' => $sub_category_id,
                             'category_name' => $child_category_name,
-                            'details' => $child_category_details
+                            'details' => $child_category_details,
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'created_by' => $_SESSION['user']->id
                         ];
                         $result = $mysqli->common_insert('child_category', $data);
                         if (!$result['error']) {

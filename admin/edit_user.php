@@ -107,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'full_name' => $full_name,
             'role' => $role,
             'is_active' => $is_active,
+            'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s')
         ];
 
@@ -177,7 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'user_id' => $_SESSION['user']->id,
                     'ip_address' => $_SERVER['REMOTE_ADDR'],
                     'category' => 'user',
-                    'message' => "Updated user #{$user_id} ({$username})"
+                    'message' => "Updated user #{$user_id} ({$username})",
+                    'created_at' => date('Y-m-d H:i:s')
                 ]);
                 
                 $_SESSION['success'] = "User updated successfully";
@@ -191,9 +193,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Include HTML after all processing
-require_once __DIR__ . '/requires/header.php';
-require_once __DIR__ . '/requires/sidebar.php';
-require_once __DIR__ . '/requires/topbar.php';
+require_once __DIR__ . '/../requires/header.php';
+require_once __DIR__ . '/../requires/sidebar.php';
+require_once __DIR__ . '/../requires/topbar.php';
 ?>
 
 <div class="container">

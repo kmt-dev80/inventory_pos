@@ -128,7 +128,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'user_id' => $_SESSION['user']->id,
             'adjustment_type' => $adjustment_type,
             'quantity' => $quantity,
-            'reason' => $reason
+            'reason' => $reason,
+            'created_at' => date('Y-m-d H:i:s'),
+            'created_by' => $_SESSION['user']->id
         ];
         
         // Start transaction
@@ -179,7 +181,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'qty' => $qty_change,
                 'price' => $product_price, // Using actual purchase cost price
                 'adjustment_id' => $adjustment_id,
-                'note' => $adjustment_data['reason']
+                'note' => $adjustment_data['reason'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
             ];
             
             $stock_result = $mysqli->common_insert('stock', $stock_data);

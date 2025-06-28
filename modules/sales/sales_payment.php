@@ -55,7 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'type' => $_POST['type'],
         'amount' => $_POST['amount'],
         'payment_method' => $_POST['payment_method'],
-        'description' => $_POST['description']
+        'description' => $_POST['description'],
+        'created_at' => date('Y-m-d H:i:s'),
+        'created_by' => $_SESSION['user']->id
     ];
     
     $result = $mysqli->common_insert('sales_payment', $payment_data);

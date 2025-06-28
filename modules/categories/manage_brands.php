@@ -32,7 +32,9 @@ switch ($action) {
                 } else {
                     $data = [
                         'brand_name' => $brand_name,
-                        'details' => $details
+                        'details' => $details,
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'created_by' => $_SESSION['user']->id
                     ];
                     $result = $mysqli->common_insert('brand', $data);
                     if (!$result['error']) {
@@ -71,7 +73,7 @@ switch ($action) {
             if (empty($brand_name)) {
                 $error = 'Brand name is required';
             } else {
-                // Check if brand already exists (excluding current brand)
+                // Check if brand already exists
                 $check = $mysqli->common_select('brand', 'id', [
                     'brand_name' => $brand_name, 
                     'id!=' => $brand_id,
@@ -84,7 +86,8 @@ switch ($action) {
                     $data = [
                         'brand_name' => $brand_name,
                         'details' => $details,
-                        'updated_at' => date('Y-m-d H:i:s')
+                        'updated_at' => date('Y-m-d H:i:s'),
+                        'updated_by' => $_SESSION['user']->id
                     ];
                     $result = $mysqli->common_update('brand', $data, ['id' => $brand_id]);
                     if (!$result['error']) {

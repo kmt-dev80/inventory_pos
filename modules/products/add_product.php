@@ -56,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$check['error'] && !empty($check['data'])) {
             $error = 'Product with this barcode already exists';
         } else {
+            $product['created_at'] = date('Y-m-d H:i:s');
+            $product['created_by'] = $_SESSION['user']->id;
             $result = $mysqli->common_insert('products', $product);
             if (!$result['error']) {
                 $success = 'Product added successfully!';
