@@ -89,7 +89,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <div class="card-body">
                                         <h5>Return Information</h5>
                                         <p><strong>Return No:</strong> <?= $return['invoice_no'] ?></p>
-                                        <p><strong>Date:</strong> <?= date('d M Y H:i', strtotime($return['created_at'])) ?></p>
+                                        <p><strong>Date:</strong> <?= date('d M Y h:i A', strtotime($return['created_at'])) ?></p>
                                         <p><strong>Reason:</strong> <?= ucfirst(str_replace('_', ' ', $return['return_reason'])) ?></p>
                                         <p><strong>Note:</strong> <?= $return['return_note'] ?: 'N/A' ?></p>
                                         <p><strong>Processed By:</strong> <?= $return['processed_by'] ?></p>
@@ -104,7 +104,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         <p><strong>Refund Method:</strong> <?= ucfirst($return['refund_method']) ?></p>
                                         <p><strong>Refund Amount:</strong> <?= number_format($return['refund_amount'], 2) ?></p>
                                         <?php if ($payment): ?>
-                                            <p><strong>Payment Date:</strong> <?= date('d M Y', strtotime($payment['created_at'])) ?></p>
+                                            <p><strong>Payment Date:</strong> <?= date('d M Y h:i A', strtotime($payment['created_at'])) ?></p>
                                             <p><strong>Payment Reference:</strong> <?= $payment['reference_no'] ?? 'N/A' ?></p>
                                         <?php endif; ?>
                                     </div>
@@ -127,7 +127,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                             <?php endif; ?>
                                         </p>
                                         <p><strong>Sale Date:</strong> 
-                                            <?= isset($return['sale_created_at']) ? date('d M Y', strtotime($return['sale_created_at'])) : 'N/A' ?>
+                                            <?= isset($return['sale_created_at']) ? date('d M Y h:i A', strtotime($return['sale_created_at'])) : 'N/A' ?>
                                         </p>
                                         <p><strong>Sale Total:</strong> 
                                             <?= isset($return['sale_total']) ? number_format($return['sale_total'], 2) : 'N/A' ?>

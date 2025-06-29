@@ -142,7 +142,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($purchase->reference_no) ?></td>
-                                                <td><?= date('d M Y', strtotime($purchase->purchase_date)) ?></td>
+                                                <td><?= date('d M Y h:i A', strtotime($purchase->purchase_date)) ?></td>
                                                 <td><?= $supplier ? htmlspecialchars($supplier->name) : 'N/A' ?></td>
                                                 <td><?= number_format($purchase->total, 2) ?></td>
                                                 <td>

@@ -211,7 +211,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <div class="card-body">
                                         <h5>Sale Information</h5>
                                         <p><strong>Invoice No:</strong> <?= $sale->invoice_no ?></p>
-                                        <p><strong>Date:</strong> <?= date('d M Y', strtotime($sale->created_at)) ?></p>
+                                        <p><strong>Date:</strong> <?= date('d M Y h:i A', strtotime($sale->created_at)) ?></p>
                                         <p><strong>Subtotal:</strong> <?= number_format($sale->subtotal, 2) ?></p>
                                         <p><strong>Discount:</strong> <?= number_format($sale->discount, 2) ?></p>
                                         <p><strong>VAT:</strong> <?= number_format($sale->vat, 2) ?></p>

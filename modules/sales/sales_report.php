@@ -207,7 +207,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     ?>
                                         <tr>
                                             <td><?= $sale->invoice_no ?></td>
-                                            <td><?= date('d M Y', strtotime($sale->created_at)) ?></td>
+                                            <td><?= date('d M Y h:i A', strtotime($sale->created_at)) ?></td>
                                             <td><?= $customer ? $customer->name : ($sale->customer_name ?: 'Walk-in') ?></td>
                                             <td><?= number_format($sale->total, 2) ?></td>
                                             <td><?= number_format($paid, 2) ?></td>

@@ -162,7 +162,7 @@ header("Content-Type: text/html; charset=UTF-8");
             <div class="invoice-info">
                 <h1>INVOICE</h1>
                 <p><strong>Invoice #:</strong> <?= $sale->invoice_no ?></p>
-                <p><strong>Date:</strong> <?= date('d M Y', strtotime($sale->created_at)) ?></p>
+                <p><strong>Date:</strong> <?= date('d M Y h:i A', strtotime($sale->created_at)) ?></p>
                 <p><strong>Status:</strong> 
                     <span style="color: <?= 
                         $sale->payment_status == 'paid' ? 'green' : 

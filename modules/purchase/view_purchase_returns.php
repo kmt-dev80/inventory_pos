@@ -157,7 +157,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <?php else: ?>
                                     <?php foreach ($returns as $return): ?>
                                         <tr>
-                                            <td><?= date('d M Y', strtotime($return['created_at'])) ?></td>
+                                            <td><?= date('d M Y h:i A', strtotime($return['created_at'])) ?></td>
                                             <td><?= $return['reference_no'] ?></td>
                                             <td><?= $return['supplier_name'] ?></td>
                                             <td><?= ucfirst(str_replace('_', ' ', $return['return_reason'])) ?></td>

@@ -10,16 +10,13 @@ require_once __DIR__ . '/../../db_plugin.php';
 $error = '';
 $success = '';
 $main_categories = [];
-$sub_categories = [];
-$child_categories = [];
 
-// Handle AJAX requests
+// Handle form submissions
 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
     header('Content-Type: application/json');
     
     $response = ['success' => false, 'message' => 'Invalid request'];
     
-    // Check which form was submitted
     if (isset($_POST['form_type'])) {
         switch ($_POST['form_type']) {
             case 'main_category':
@@ -43,7 +40,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
                         if (!$result['error']) {
                             $response = [
                                 'success' => true,
-                                'message' => 'Main category added successfully',
+                                'message' => 'Main category added successfully'
                             ];
                             
                             // Get updated list
@@ -54,25 +51,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
                         } else {
                             $response['message'] = 'Error adding main category: ' . $result['error_msg'];
                         }
-                    }
-                }
-                break;
-                
-            case 'get_sub_categories':
-                $main_category_id = (int)$_POST['main_category_id'];
-                if ($main_category_id > 0) {
-                    $result = $mysqli->common_select('sub_category', '*', [
-                        'category_id' => $main_category_id,
-                        'is_deleted' => 0
-                    ], 'category_name', 'asc');
-                    
-                    if (!$result['error']) {
-                        $response = [
-                            'success' => true,
-                            'data' => $result['data']
-                        ];
-                    } else {
-                        $response['message'] = 'Error fetching sub categories';
                     }
                 }
                 break;
@@ -109,37 +87,9 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
                                 'success' => true,
                                 'message' => 'Sub category added successfully'
                             ];
-                            
-                            // Get updated sub categories
-                            $sub_result = $mysqli->common_select('sub_category', '*', [
-                                'category_id' => $main_category_id,
-                                'is_deleted' => 0
-                            ], 'category_name', 'asc');
-                            if (!$sub_result['error']) {
-                                $response['sub_categories'] = $sub_result['data'];
-                            }
                         } else {
                             $response['message'] = 'Error adding sub category: ' . $result['error_msg'];
                         }
-                    }
-                }
-                break;
-                
-            case 'get_child_categories':
-                $sub_category_id = (int)$_POST['sub_category_id'];
-                if ($sub_category_id > 0) {
-                    $result = $mysqli->common_select('child_category', '*', [
-                        'sub_category_id' => $sub_category_id,
-                        'is_deleted' => 0
-                    ], 'category_name', 'asc');
-                    
-                    if (!$result['error']) {
-                        $response = [
-                            'success' => true,
-                            'data' => $result['data']
-                        ];
-                    } else {
-                        $response['message'] = 'Error fetching child categories';
                     }
                 }
                 break;
@@ -176,15 +126,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
                                 'success' => true,
                                 'message' => 'Child category added successfully'
                             ];
-                            
-                            // Get updated child categories
-                            $child_result = $mysqli->common_select('child_category', '*', [
-                                'sub_category_id' => $sub_category_id,
-                                'is_deleted' => 0
-                            ], 'category_name', 'asc');
-                            if (!$child_result['error']) {
-                                $response['child_categories'] = $child_result['data'];
-                            }
                         } else {
                             $response['message'] = 'Error adding child category: ' . $result['error_msg'];
                         }
@@ -234,7 +175,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <form method="post" id="mainCategoryForm">
                                         <input type="hidden" name="form_type" value="main_category">
                                         <div class="mb-3">
-                                            <label for="main_category_name" class="form-label">Category Name</label>
+                                            <label for="main_category_name" class="form-label">Category Name *</label>
                                             <input type="text" class="form-control" id="main_category_name" name="main_category_name" required>
                                         </div>
                                         <div class="mb-3">
@@ -280,7 +221,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <form method="post" id="subCategoryForm">
                                         <input type="hidden" name="form_type" value="sub_category">
                                         <div class="mb-3">
-                                            <label for="main_category_select" class="form-label">Main Category</label>
+                                            <label for="main_category_select" class="form-label">Main Category *</label>
                                             <select class="form-select" id="main_category_select" name="main_category_id" required>
                                                 <option value="">Select Main Category</option>
                                                 <?php foreach ($main_categories as $category): ?>
@@ -290,7 +231,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         </div>
                                         
                                         <div class="mb-3">
-                                            <label for="sub_category_name" class="form-label">Sub Category Name</label>
+                                            <label for="sub_category_name" class="form-label">Sub Category Name *</label>
                                             <input type="text" class="form-control" id="sub_category_name" name="sub_category_name" required>
                                         </div>
                                         <div class="mb-3">
@@ -323,14 +264,14 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <form method="post" id="childCategoryForm">
                                         <input type="hidden" name="form_type" value="child_category">
                                         <div class="mb-3">
-                                            <label for="sub_category_select" class="form-label">Sub Category</label>
+                                            <label for="sub_category_select" class="form-label">Sub Category *</label>
                                             <select class="form-select" id="sub_category_select" name="sub_category_id" required disabled>
                                                 <option value="">Select Sub Category</option>
                                             </select>
                                         </div>
                                         
                                         <div class="mb-3">
-                                            <label for="child_category_name" class="form-label">Child Category Name</label>
+                                            <label for="child_category_name" class="form-label">Child Category Name *</label>
                                             <input type="text" class="form-control" id="child_category_name" name="child_category_name" required>
                                         </div>
                                         <div class="mb-3">
@@ -385,10 +326,9 @@ $(document).ready(function() {
         if (mainCategoryId) {
             // Make AJAX request to get sub categories
             $.ajax({
-                url: window.location.href,
+                url: 'api/get_sub_categories.php',
                 type: 'POST',
                 data: {
-                    form_type: 'get_sub_categories',
                     main_category_id: mainCategoryId
                 },
                 dataType: 'json',
@@ -437,10 +377,9 @@ $(document).ready(function() {
         if (subCategoryId) {
             // Make AJAX request to get child categories
             $.ajax({
-                url: window.location.href,
+                url: 'api/get_child_categories.php',
                 type: 'POST',
                 data: {
-                    form_type: 'get_child_categories',
                     sub_category_id: subCategoryId
                 },
                 dataType: 'json',
@@ -533,27 +472,8 @@ $(document).ready(function() {
                     showAlert(response.message, 'success');
                     form.find('#sub_category_name, #sub_category_details').val('');
                     
-                    if (response.sub_categories) {
-                        // Update sub categories list
-                        var html = '<ul class="list-group">';
-                        $.each(response.sub_categories, function(index, subCategory) {
-                            html += `
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    ${subCategory.category_name}
-                                    ${subCategory.details ? `<small class="text-muted">${subCategory.details}</small>` : ''}
-                                </li>
-                            `;
-                        });
-                        html += '</ul>';
-                        $('#subCategoriesList').html(html);
-                        
-                        // Update sub category select
-                        var options = '<option value="">Select Sub Category</option>';
-                        $.each(response.sub_categories, function(index, subCategory) {
-                            options += `<option value="${subCategory.id}">${subCategory.category_name}</option>`;
-                        });
-                        $('#sub_category_select').html(options);
-                    }
+                    // Refresh sub categories list
+                    $('#main_category_select').trigger('change');
                 } else {
                     showAlert(response.message, 'error');
                 }
@@ -580,20 +500,8 @@ $(document).ready(function() {
                     showAlert(response.message, 'success');
                     form.find('#child_category_name, #child_category_details').val('');
                     
-                    if (response.child_categories) {
-                        // Update child categories list
-                        var html = '<ul class="list-group">';
-                        $.each(response.child_categories, function(index, childCategory) {
-                            html += `
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    ${childCategory.category_name}
-                                    ${childCategory.details ? `<small class="text-muted">${childCategory.details}</small>` : ''}
-                                </li>
-                            `;
-                        });
-                        html += '</ul>';
-                        $('#childCategoriesList').html(html);
-                    }
+                    // Refresh child categories list
+                    $('#sub_category_select').trigger('change');
                 } else {
                     showAlert(response.message, 'error');
                 }

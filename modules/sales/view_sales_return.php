@@ -62,7 +62,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <?php foreach ($returns as $return): ?>
                                         <tr>
                                             <td><?= $return['invoice_no'] ?? 'RTN-' . $return['id'] ?></td>
-                                            <td><?= date('d M Y', strtotime($return['created_at'])) ?></td>
+                                            <td><?= date('d M Y h:i A', strtotime($return['created_at'])) ?></td>
                                             <td>
                                                 <?php if ($return['sale_invoice']): ?>
                                                     <a href="sale_details.php?id=<?= $return['sale_id'] ?>">

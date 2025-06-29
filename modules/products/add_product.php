@@ -35,7 +35,7 @@ $result = $mysqli->common_select('brand', '*', ['is_deleted' => 0], 'brand_name'
 if (!$result['error']) $brands = $result['data'];
 
 // Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['get_sub_categories']) && !isset($_GET['get_child_categories'])) {
     // Basic validation
     $product['name'] = trim($_POST['name'] ?? '');
     $product['barcode'] = trim($_POST['barcode'] ?? '');
@@ -77,30 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-}
-
-// Handle AJAX requests for category dropdowns
-if (isset($_GET['get_sub_categories'])) {
-     header('Content-Type: application/json');
-    $category_id = (int)$_GET['category_id'];
-    if ($category_id > 0) {
-        $result = $mysqli->common_select('sub_category', '*', ['category_id' => $category_id, 'is_deleted' => 0], 'category_name', 'asc');
-        echo json_encode($result['error'] ? [] : $result['data']);
-    } else {
-        echo json_encode([]);
-    }
-    exit;
-}
-
-if (isset($_GET['get_child_categories'])) {
-    $sub_category_id = (int)$_GET['sub_category_id'];
-    if ($sub_category_id > 0) {
-        $result = $mysqli->common_select('child_category', '*', ['sub_category_id' => $sub_category_id, 'is_deleted' => 0], 'category_name', 'asc');
-        echo json_encode($result['error'] ? [] : $result['data']);
-    } else {
-        echo json_encode([]);
-    }
-    exit;
 }
 
 require_once __DIR__ . '/../../requires/header.php';
@@ -230,7 +206,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
 </div>
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
-    jQuery(document).ready(function($) {
+jQuery(document).ready(function($) {
     // Category chain dropdowns
     $('#category_id').change(function() {
         var categoryId = $(this).val();
@@ -239,8 +215,8 @@ require_once __DIR__ . '/../../requires/topbar.php';
         
         if (categoryId) {
             $.ajax({
-                url: 'add_product.php',
-                data: {get_sub_categories: 1, category_id: categoryId},
+                url: 'api/get_sub_categories.php',
+                data: {category_id: categoryId},
                 dataType: 'json',
                 success: function(data) {
                     var options = '<option value="">Select Sub Category</option>';
@@ -265,9 +241,9 @@ require_once __DIR__ . '/../../requires/topbar.php';
         
         if (subCategoryId) {
             $.ajax({
-                url: 'add_product.php',
-                data: {get_child_categories: 1, sub_category_id: subCategoryId},
-                dataType: 'json', // Explicitly expect JSON
+                url: 'api/get_child_categories.php',
+                data: {sub_category_id: subCategoryId},
+                dataType: 'json',
                 success: function(data) {
                     var options = '<option value="">Select Child Category</option>';
                     if (data && data.length) {
@@ -284,6 +260,6 @@ require_once __DIR__ . '/../../requires/topbar.php';
             });
         }
     });
-    
 });
-</script>    
+</script>
+ 

@@ -137,7 +137,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($sale->invoice_no) ?></td>
-                                                <td><?= date('d M Y H:i', strtotime($sale->created_at)) ?></td>
+                                                <td><?= date('d M Y h:i A', strtotime($sale->created_at)) ?></td>
                                                 <td><?= htmlspecialchars($customer ? $customer->name : ($sale->customer_name ?: 'Walk-in')) ?></td>
                                                 <td><?= htmlspecialchars($customer ? $customer->phone : $sale->phone) ?></td>
                                                 <td><?= number_format($sale->total, 2) ?></td>

@@ -99,7 +99,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     </div>
                                     <div class="card-body">
                                         <p><strong>Invoice No:</strong> <?= $sale->invoice_no ?></p>
-                                        <p><strong>Date:</strong> <?= date('d M Y H:i', strtotime($sale->created_at)) ?></p>
+                                        <p><strong>Date:</strong> <?= date('d M Y h:i A', strtotime($sale->created_at)) ?></p>
                                         <p>
                                             <strong>Status:</strong> 
                                             <span class="badge badge-<?= 

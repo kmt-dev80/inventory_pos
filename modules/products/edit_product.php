@@ -26,7 +26,7 @@ if ($product_id > 0) {
         exit();
     }
 } else {
-    header("Location: edit_product.php");
+    header("Location: view_product.php");
     exit();
 }
 
@@ -42,13 +42,19 @@ if (!$result['error']) $categories = $result['data'];
 
 // Get sub-categories if category is selected
 if ($product->category_id) {
-    $result = $mysqli->common_select('sub_category', '*', ['category_id' => $product->category_id, 'is_deleted' => 0], 'category_name', 'asc');
+    $result = $mysqli->common_select('sub_category', '*', [
+        'category_id' => $product->category_id, 
+        'is_deleted' => 0
+    ], 'category_name', 'asc');
     if (!$result['error']) $sub_categories = $result['data'];
 }
 
 // Get child-categories if sub-category is selected
 if ($product->sub_category_id) {
-    $result = $mysqli->common_select('child_category', '*', ['sub_category_id' => $product->sub_category_id, 'is_deleted' => 0], 'category_name', 'asc');
+    $result = $mysqli->common_select('child_category', '*', [
+        'sub_category_id' => $product->sub_category_id, 
+        'is_deleted' => 0
+    ], 'category_name', 'asc');
     if (!$result['error']) $child_categories = $result['data'];
 }
 
@@ -71,13 +77,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'updated_by' => $_SESSION['user']->id
     ];
 
+    // Validation
     if (empty($update_data['name'])) {
         $error = 'Product name is required';
     } elseif (empty($update_data['barcode'])) {
         $error = 'Barcode is required';
-    }else {
+    } else {
         // Check if barcode exists (excluding current product)
-        $check = $mysqli->common_select('products', 'id', ['barcode' => $update_data['barcode'], 'id!=' => $product_id, 'is_deleted' => 0]);
+        $check = $mysqli->common_select('products', 'id', [
+            'barcode' => $update_data['barcode'], 
+            'id!=' => $product_id, 
+            'is_deleted' => 0
+        ]);
+        
         if (!$check['error'] && !empty($check['data'])) {
             $error = 'Product with this barcode already exists';
         } else {
@@ -86,9 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'Product updated successfully!';
                 // Refresh product data
                 $result = $mysqli->common_select('products', '*', ['id' => $product_id]);
-                if (!$result['error'] && !empty($result['data'])) {
-                    $product = $result['data'][0];
-                }
+                if (!$result['error']) $product = $result['data'][0];
             } else {
                 $error = 'Error updating product: ' . $result['error_msg'];
             }
@@ -224,42 +234,69 @@ require_once __DIR__ . '/../../requires/topbar.php';
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
 $(document).ready(function() {
-    // Category chain dropdowns
+    // Category chain dropdowns - Using the shared API endpoints
     $('#category_id').change(function() {
         var categoryId = $(this).val();
-        $('#sub_category_id').html('<option value="">Loading...</option>');
-        $('#sub_category_id').prop('disabled', true);
-        $('#child_category_id').html('<option value="">Select Child Category</option>');
-        $('#child_category_id').prop('disabled', true);
+        $('#sub_category_id').html('<option value="">Loading...</option>').prop('disabled', true);
+        $('#child_category_id').html('<option value="">Select Child Category</option>').prop('disabled', true);
         
         if (categoryId) {
-            $.get('edit_product.php', {get_sub_categories: 1, category_id: categoryId}, function(data) {
-                var options = '<option value="">Select Sub Category</option>';
-                $.each(data, function(key, value) {
-                    options += '<option value="' + value.id + '">' + value.category_name + '</option>';
-                });
-                $('#sub_category_id').html(options);
-                $('#sub_category_id').prop('disabled', false);
+            $.ajax({
+                url: 'api/get_sub_categories.php',
+                data: { category_id: categoryId },
+                dataType: 'json',
+                success: function(data) {
+                    var options = '<option value="">Select Sub Category</option>';
+                    $.each(data, function(key, value) {
+                        options += '<option value="' + value.id + '">' + value.category_name + '</option>';
+                    });
+                    $('#sub_category_id').html(options).prop('disabled', false);
+                    
+                    // Re-select previously selected sub-category if still valid
+                    if (<?= $product->sub_category_id ?>) {
+                        $('#sub_category_id').val(<?= $product->sub_category_id ?>).trigger('change');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error loading sub-categories:", error);
+                    $('#sub_category_id').html('<option value="">Error loading</option>');
+                }
             });
         }
     });
     
     $('#sub_category_id').change(function() {
         var subCategoryId = $(this).val();
-        $('#child_category_id').html('<option value="">Loading...</option>');
-        $('#child_category_id').prop('disabled', true);
+        $('#child_category_id').html('<option value="">Loading...</option>').prop('disabled', true);
         
         if (subCategoryId) {
-            $.get('edit_product.php', {get_child_categories: 1, sub_category_id: subCategoryId}, function(data) {
-                var options = '<option value="">Select Child Category</option>';
-                $.each(data, function(key, value) {
-                    options += '<option value="' + value.id + '">' + value.category_name + '</option>';
-                });
-                $('#child_category_id').html(options);
-                $('#child_category_id').prop('disabled', false);
+            $.ajax({
+                url: 'api/get_child_categories.php',
+                data: { sub_category_id: subCategoryId },
+                dataType: 'json',
+                success: function(data) {
+                    var options = '<option value="">Select Child Category</option>';
+                    $.each(data, function(key, value) {
+                        options += '<option value="' + value.id + '">' + value.category_name + '</option>';
+                    });
+                    $('#child_category_id').html(options).prop('disabled', false);
+                    
+                    // Re-select previously selected child-category if still valid
+                    if (<?= $product->child_category_id ?>) {
+                        $('#child_category_id').val(<?= $product->child_category_id ?>);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error loading child categories:", error);
+                    $('#child_category_id').html('<option value="">Error loading</option>');
+                }
             });
         }
     });
     
+    // Trigger change if category is pre-selected
+    <?php if ($product->category_id): ?>
+        $('#category_id').trigger('change');
+    <?php endif; ?>
 });
 </script>

@@ -216,7 +216,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                             <tbody>
                                                 <?php foreach ($payments as $payment): ?>
                                                     <tr>
-                                                        <td><?= date('d M Y H:i', strtotime($payment->created_at)) ?></td>
+                                                        <td><?= date('d M Y h:i A', strtotime($payment->created_at)) ?></td>
                                                         <td>
                                                             <span class="badge badge-<?= $payment->type == 'payment' ? 'success' : 'danger' ?>">
                                                                 <?= ucfirst($payment->type) ?>
