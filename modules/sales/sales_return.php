@@ -28,67 +28,42 @@ $sale = $sale_result['data'][0];
 $discount_factor = $sale->subtotal > 0 ? ($sale->discount / $sale->subtotal) : 0;
 $vat_factor = ($sale->subtotal - $sale->discount) > 0 ? ($sale->vat / ($sale->subtotal - $sale->discount)) : 0;
 
+// Get customer details
 $customer = $sale->customer_id ? 
     $mysqli->common_select('customers', '*', ['id' => $sale->customer_id])['data'][0] : null;
 
-// Get sale items with discounted prices and original FIFO batches
+// Get sale items with discounted prices
 $items_query = "
     SELECT si.*, 
            (si.unit_price * (1 - ?)) as discounted_price,
-           (si.unit_price * (1 - ?) * (1 + ?)) as price_with_vat,
-           GROUP_CONCAT(s.id ORDER BY s.created_at ASC) as batch_ids,
-           GROUP_CONCAT(s.qty ORDER BY s.created_at ASC) as batch_qtys,
-           GROUP_CONCAT(s.price ORDER BY s.created_at ASC) as batch_prices
+           (si.unit_price * (1 - ?) * (1 + ?)) as price_with_vat
     FROM sale_items si
-    LEFT JOIN stock s ON s.sale_id = si.sale_id AND s.product_id = si.product_id AND s.change_type = 'sale'
     WHERE si.sale_id = ?
-    GROUP BY si.id
 ";
 $stmt = $mysqli->getConnection()->prepare($items_query);
 $stmt->bind_param('dddi', $discount_factor, $discount_factor, $vat_factor, $sale_id);
 $stmt->execute();
 $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Process each item to get FIFO batch details
-foreach ($items as &$item) {
-    $item['batches'] = [];
-    if (!empty($item['batch_ids'])) {
-        $batch_ids = explode(',', $item['batch_ids']);
-        $batch_qtys = explode(',', $item['batch_qtys']);
-        $batch_prices = explode(',', $item['batch_prices']);
-        
-        for ($i = 0; $i < count($batch_ids); $i++) {
-            $item['batches'][] = [
-                'id' => $batch_ids[$i],
-                'qty' => abs($batch_qtys[$i]), // Convert negative sale quantities to positive
-                'price' => $batch_prices[$i]
-            ];
-        }
-    }
-}
-unset($item); // Break the reference
-
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $mysqli->begin_transaction();
     
     try {
+        // Calculate total refund amount (with VAT as per original sale)
         $total_refund = 0;
-        $return_items = [];
-        
-        foreach ($_POST['products'] as $product_id => $product) {
+        foreach ($_POST['products'] as $product) {
             if ($product['return_qty'] > 0) {
                 $total_refund += $product['return_total_with_vat'];
-                $return_items[$product_id] = $product;
             }
         }
 
-        // Create return record
+        // Create sales return record
         $return_data = [
             'sale_id' => $sale_id,
             'return_reason' => $_POST['return_reason'],
             'return_note' => $_POST['return_note'],
-            'refund_amount' => $total_refund,
+            'refund_amount' => $total_refund, // Total with VAT
             'refund_method' => $_POST['refund_method'],
             'user_id' => $_SESSION['user']->id,
             'invoice_no' => 'RTN-' . strtoupper(uniqid()),
@@ -101,56 +76,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $return_id = $return_result['data'];
         
-        // Process each returned item with FIFO restoration
-        foreach ($return_items as $product_id => $product) {
-            $item_data = [
-                'sales_return_id' => $return_id,
-                'product_id' => $product_id,
-                'quantity' => $product['return_qty'],
-                'unit_price' => $product['price'],
-                'discounted_price' => $product['discounted_price'],
-                'vat_amount' => $product['vat_amount'],
-                'total_price' => $product['return_total_with_vat'],
-                'created_at' => date('Y-m-d H:i:s'),
-                'created_by' => $_SESSION['user']->id
-            ];
-            
-            $item_result = $mysqli->common_insert('sales_return_items', $item_data);
-            if ($item_result['error']) throw new Exception($item_result['error_msg']);
-            
-            // Find the original item to get FIFO batch info
-            $original_item = null;
-            foreach ($items as $item) {
-                if ($item['product_id'] == $product_id) {
-                    $original_item = $item;
-                    break;
-                }
-            }
-            
-            if (!$original_item || empty($original_item['batches'])) {
-                throw new Exception("Original sale batches not found for product ID: $product_id");
-            }
-            
-            // Process FIFO restoration - return to original batches
-            $remaining_qty = $product['return_qty'];
-            $total_cost = 0;
-            
-            foreach ($original_item['batches'] as $batch) {
-                if ($remaining_qty <= 0) break;
+        // Insert return items
+        foreach ($_POST['products'] as $product) {
+            if ($product['return_qty'] > 0) {
+                $item_data = [
+                    'sales_return_id' => $return_id,
+                    'product_id' => $product['id'],
+                    'quantity' => $product['return_qty'],
+                    'unit_price' => $product['price'], // Original unit price
+                    'discounted_price' => $product['discounted_price'], 
+                    'vat_amount' => $product['vat_amount'],
+                    'total_price' => $product['return_total_with_vat'], 
+                    //'total_price_ex_vat' => $product['return_total'],
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $_SESSION['user']->id
+                ];
                 
-                // Determine how much to return to this batch
-                $restore_qty = min($remaining_qty, $batch['qty']);
-                $remaining_qty -= $restore_qty;
+                $item_result = $mysqli->common_insert('sales_return_items', $item_data);
+                if ($item_result['error']) throw new Exception($item_result['error_msg']);
                 
-                // Record the stock movement (using the selling price but tracking original batch)
                 $stock_data = [
-                    'product_id' => $product_id,
+                    'product_id' => $product['id'],
                     'user_id' => $_SESSION['user']->id,
                     'change_type' => 'sales_return',
-                    'qty' => $restore_qty,
-                    'price' => $product['discounted_price'], // Selling price after discount
+                    'qty' => $product['return_qty'],
+                    'price' => $product['discounted_price'],
                     'sales_return_id' => $return_id,
-                    'batch_id' => $batch['id'], // Reference original batch
                     'note' => 'Sales return',
                     'created_at' => date('Y-m-d H:i:s'),
                     'created_by' => $_SESSION['user']->id
@@ -161,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
         
-        // Process refund if applicable
+        // Record refund payment if applicable
         if ($_POST['refund_method'] == 'cash' || $_POST['refund_method'] == 'bank_transfer') {
             $payment_data = [
                 'customer_id' => $sale->customer_id,
@@ -211,7 +162,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <div class="card-body">
                                         <h5>Sale Information</h5>
                                         <p><strong>Invoice No:</strong> <?= $sale->invoice_no ?></p>
-                                        <p><strong>Date:</strong> <?= date('d M Y h:i A', strtotime($sale->created_at)) ?></p>
+                                        <p><strong>Date:</strong> <?= date('d M Y h:i A',strtotime($sale->created_at)) ?></p>
                                         <p><strong>Subtotal:</strong> <?= number_format($sale->subtotal, 2) ?></p>
                                         <p><strong>Discount:</strong> <?= number_format($sale->discount, 2) ?></p>
                                         <p><strong>VAT:</strong> <?= number_format($sale->vat, 2) ?></p>
@@ -279,7 +230,6 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         <tr>
                                             <th>Product</th>
                                             <th>Sold Qty</th>
-                                            <th>Batches</th> <!-- New column for batch info -->
                                             <th>Return Qty</th>
                                             <th>Unit Price</th>
                                             <th>Discounted Price</th>
@@ -296,23 +246,12 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                                 <td><?= $product ? $product->name . ' (' . $product->barcode . ')' : 'Product not found' ?></td>
                                                 <td><?= $item['quantity'] ?></td>
                                                 <td>
-                                                    <?php if (!empty($item['batches'])): ?>
-                                                        <div class="batch-info">
-                                                            <?php foreach ($item['batches'] as $batch): ?>
-                                                                <div>Batch #<?= $batch['id'] ?>: <?= $batch['qty'] ?> @ <?= number_format($batch['price'], 2) ?></div>
-                                                            <?php endforeach; ?>
-                                                        </div>
-                                                    <?php else: ?>
-                                                        No batch info
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <input type="hidden" name="products[<?= $item['product_id'] ?>][id]" value="<?= $item['product_id'] ?>">
-                                                    <input type="hidden" name="products[<?= $item['product_id'] ?>][price]" value="<?= $item['unit_price'] ?>">
-                                                    <input type="hidden" name="products[<?= $item['product_id'] ?>][discounted_price]" value="<?= $item['discounted_price'] ?>">
-                                                    <input type="hidden" name="products[<?= $item['product_id'] ?>][vat_amount]" value="<?= $vat_amount_per_unit ?>">
+                                                    <input type="hidden" name="products[<?= $item['id'] ?>][id]" value="<?= $item['product_id'] ?>">
+                                                    <input type="hidden" name="products[<?= $item['id'] ?>][price]" value="<?= $item['unit_price'] ?>">
+                                                    <input type="hidden" name="products[<?= $item['id'] ?>][discounted_price]" value="<?= $item['discounted_price'] ?>">
+                                                    <input type="hidden" name="products[<?= $item['id'] ?>][vat_amount]" value="<?= $vat_amount_per_unit ?>">
                                                     <input type="number" class="form-control return-qty" 
-                                                        name="products[<?= $item['product_id'] ?>][return_qty]" 
+                                                        name="products[<?= $item['id'] ?>][return_qty]" 
                                                         min="0" max="<?= $item['quantity'] ?>" 
                                                         value="0" 
                                                         data-price="<?= $item['discounted_price'] ?>"
@@ -323,16 +262,20 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                                 <td><?= number_format($vat_amount_per_unit, 2) ?></td>
                                                 <td>
                                                     <input type="text" class="form-control return-total" 
-                                                        name="products[<?= $item['product_id'] ?>][return_total]" 
+                                                        name="products[<?= $item['id'] ?>][return_total]" 
                                                         value="0.00" readonly>
                                                     <input type="hidden" class="return-total-with-vat" 
-                                                        name="products[<?= $item['product_id'] ?>][return_total_with_vat]" 
+                                                        name="products[<?= $item['id'] ?>][return_total_with_vat]" 
                                                         value="0.00">
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                     <tfoot>
+                                        <tr>
+                                            <td colspan="6" class="text-right"><strong>Total Refund Amount (Excluding VAT)</strong></td>
+                                            <td><input type="text" class="form-control" id="totalRefundExVat" value="0.00" readonly></td>
+                                        </tr>
                                         <tr>
                                             <td colspan="6" class="text-right"><strong>Total VAT Amount</strong></td>
                                             <td><input type="text" class="form-control" id="totalVat" value="0.00" readonly></td>
@@ -356,7 +299,6 @@ require_once __DIR__ . '/../../requires/topbar.php';
 </div>
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
-// JavaScript remains the same
 $(document).ready(function() {
     // Calculate return totals when quantity changes
     $('.return-qty').change(function() {
@@ -364,30 +306,32 @@ $(document).ready(function() {
         const discounted_price = parseFloat($(this).data('price')) || 0;
         const vat_per_unit = parseFloat($(this).data('vat')) || 0;
         
-        const total_with_vat = qty * (discounted_price + vat_per_unit);
+        const total_ex_vat = qty * discounted_price;
+        const total_vat = qty * vat_per_unit;
+        const total_with_vat = total_ex_vat + total_vat;
         
-        $(this).closest('tr').find('.return-total').val(total_with_vat.toFixed(2));
+        $(this).closest('tr').find('.return-total').val(total_ex_vat.toFixed(2));
         $(this).closest('tr').find('.return-total-with-vat').val(total_with_vat.toFixed(2));
         
         calculateTotalRefund();
     });
     
     function calculateTotalRefund() {
-        let total_with_vat = 0;
+        let total_ex_vat = 0;
         let total_vat = 0;
+        let total_with_vat = 0;
+        
+        $('.return-total').each(function() {
+            total_ex_vat += parseFloat($(this).val()) || 0;
+        });
         
         $('.return-total-with-vat').each(function() {
-            const amount = parseFloat($(this).val()) || 0;
-            total_with_vat += amount;
+            total_with_vat += parseFloat($(this).val()) || 0;
         });
         
-        // Calculate total VAT by summing all VAT amounts
-        $('[name*="[vat_amount]"]').each(function() {
-            const vat_per_unit = parseFloat($(this).val()) || 0;
-            const qty = parseFloat($(this).closest('tr').find('.return-qty').val()) || 0;
-            total_vat += vat_per_unit * qty;
-        });
+        total_vat = total_with_vat - total_ex_vat;
         
+        $('#totalRefundExVat').val(total_ex_vat.toFixed(2));
         $('#totalVat').val(total_vat.toFixed(2));
         $('#totalRefund').val(total_with_vat.toFixed(2));
     }

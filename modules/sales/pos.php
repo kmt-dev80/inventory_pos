@@ -6,10 +6,12 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php';
 
+// Handle POS sale
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $mysqli->begin_transaction();
     
     try {
+        // Handle customer creation/selection
         $customer_id = null;
         if (!empty($_POST['customer_name']) || !empty($_POST['customer_phone']) || !empty($_POST['customer_email'])) {
             // Check if customer exists by phone or email
@@ -29,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
             
-            
+            // Create new customer if not exists
             if (!$customer_id) {
                 $new_customer = [
                     'name' => $_POST['customer_name'] ?: 'Unknown Customer',
@@ -67,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $sale_id = $sale_result['data'];
         
+        // Insert sale items
         foreach ($_POST['products'] as $product) {
             $item_data = [
                 'sale_id' => $sale_id,
@@ -81,66 +84,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $item_result = $mysqli->common_insert('sale_items', $item_data);
             if ($item_result['error']) throw new Exception($item_result['error_msg']);
             
-            // FIFO Inventory
-            $qtyToSell = $product['quantity'];
-            $productId = $product['id'];
-
-            // Get all available purchase batches (oldest first) with remaining qty
-            $batch_query = "
-                SELECT 
-                    p.id, 
-                    p.price, 
-                    (p.qty - COALESCE(SUM(s.qty * -1), 0)) AS remaining_qty
-                FROM stock p
-                LEFT JOIN stock s ON s.batch_id = p.id AND s.change_type = 'sale'
-                WHERE p.product_id = ? AND p.change_type = 'purchase'
-                GROUP BY p.id
-                HAVING remaining_qty > 0
-                ORDER BY p.created_at ASC, p.id ASC
-            ";
-            $stmt = $mysqli->getConnection()->prepare($batch_query);
-            $stmt->bind_param('i', $productId);
-            $stmt->execute();
-            $batches = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-            $totalAvailableStock = array_sum(array_column($batches, 'remaining_qty'));
-
-            if ($totalAvailableStock < $qtyToSell) {
-                throw new Exception("Not enough stock for product ID: $productId. Available: $totalAvailableStock, Requested: $qtyToSell");
-            }
-
+            // Calculate the actual price after discount (excluding VAT)
+            $totalDiscount = $_POST['discount'];
+            $totalSubtotal = $_POST['subtotal'];
+            
+            // Calculate discount percentage that applies to this product
+            $productShare = $product['total'] / $totalSubtotal;
+            $productDiscount = $totalDiscount * $productShare;
+            
             // Calculate discounted price per unit
-            $discountedPricePerUnit = ($product['total'] - ($product['total'] * $_POST['discount'] / $_POST['subtotal'])) / $product['quantity'];
-
-            // Process FIFO deduction
-            $remainingQty = $qtyToSell;
-
-            foreach ($batches as $batch) {
-                if ($remainingQty <= 0) break;
-
-                $deductQty = min($remainingQty, $batch['remaining_qty']);
-                $remainingQty -= $deductQty;
-
-                // Insert stock record for this batch
-                $stock_data = [
-                    'product_id' => $productId,
-                    'user_id' => $_SESSION['user']->id,
-                    'change_type' => 'sale',
-                    'qty' => -$deductQty,
-                    'price' => $discountedPricePerUnit,
-                    'sale_id' => $sale_id,
-                    'batch_id' => $batch['id'], // Reference to original batch
-                    'note' => 'POS Sale(FIFO)',
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'created_by' => $_SESSION['user']->id
-                ];
-
-                $stock_result = $mysqli->common_insert('stock', $stock_data);
-                if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
-            }
+            $discountedPricePerUnit = ($product['total'] - $productDiscount) / $product['quantity'];
+            
+            // Update stock with the discounted price (COGS)
+            $stock_data = [
+                'product_id' => $product['id'],
+                'user_id' => $_SESSION['user']->id,
+                'change_type' => 'sale',
+                'qty' => -$product['quantity'],
+                'price' => $discountedPricePerUnit, // Store the actual price after discount
+                'sale_id' => $sale_id,
+                'note' => 'POS sale',
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $_SESSION['user']->id
+            ];
+            
+            $stock_result = $mysqli->common_insert('stock', $stock_data);
+            if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
         }
                     
-        
+        // Insert payment if paid
         if ($_POST['payment_status'] == 'paid' || $_POST['payment_status'] == 'partial') {
             $payment_data = [
                 'customer_id' => $customer_id,
@@ -174,16 +146,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
+// Get customers and products
 $customers = $mysqli->common_select('customers', 'id, name, phone, email', [], 'name')['data'];
 $products = $mysqli->common_select('products', '*', ['is_deleted' => 0])['data'];
 
-// Calculate available stock for each product
-$products_with_stock = array_map(function($p) use ($mysqli) {
-    $stock_query = "SELECT 
-                    COALESCE(SUM(CASE WHEN change_type = 'purchase' THEN qty ELSE 0 END), 0) - 
-                    COALESCE(SUM(CASE WHEN change_type = 'sale' THEN ABS(qty) ELSE 0 END), 0) as stock 
-                    FROM stock WHERE product_id = ?";
-    $stmt = $mysqli->getConnection()->prepare($stock_query);
+$mysqli_connection = $mysqli;
+$products_with_stock = array_map(function($p) use ($mysqli_connection) {
+    // Get current stock for each product
+    $stock_query = "SELECT COALESCE(SUM(qty), 0) as stock FROM stock WHERE product_id = ?";
+    $stmt = $mysqli_connection->getConnection()->prepare($stock_query);
     $stmt->bind_param('i', $p->id);
     $stmt->execute();
     $stock = $stmt->get_result()->fetch_object()->stock;
@@ -192,15 +163,15 @@ $products_with_stock = array_map(function($p) use ($mysqli) {
         'id' => $p->id, 
         'name' => $p->name, 
         'barcode' => $p->barcode, 
-        'price' => (float)$p->sell_price,
+        'price' => (float)$p->sell_price, // Cast to float to ensure it's a number
         'stock' => (int)$stock
     ];
 }, $products);
-
 require_once __DIR__ . '/../../requires/header.php';
 require_once __DIR__ . '/../../requires/sidebar.php';
 require_once __DIR__ . '/../../requires/topbar.php';
 ?>
+
 <style>
 .search-container {
     position: relative;
@@ -480,14 +451,15 @@ require_once __DIR__ . '/../../requires/topbar.php';
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 
 <script>
+// Product data with stock information
 const products = <?= json_encode($products_with_stock) ?>;
 const customers = <?= json_encode($customers) ?>;
 
 $(document).ready(function() {
-
+    // Add alert for empty cart
     $('#posTbody').before('<div class="alert alert-danger alert-empty-cart">Please add at least one product to complete the sale.</div>');
     
-    
+    // Customer search handler - now searches name, phone, and email
     $('#customerSearch').on('input', function() {
         const searchTerm = $(this).val().trim();
         const resultsContainer = $('#customerResults');
@@ -502,7 +474,7 @@ $(document).ready(function() {
             const searchLower = searchTerm.toLowerCase();
             return (
                 (c.name && c.name.toLowerCase().includes(searchLower)) ||
-                (c.phone && c.phone.includes(searchTerm)) || 
+                (c.phone && c.phone.includes(searchTerm)) || // Phone numbers often have + or other chars
                 (c.email && c.email.toLowerCase().includes(searchLower))
             );
         }).slice(0, 10); // Limit to 10 results
@@ -553,7 +525,7 @@ $(document).ready(function() {
         const customerPhone = $(this).data('phone');
         const customerEmail = $(this).data('email');
         
-        // If customer has no name
+        // If customer has no name but we found by phone/email, prompt for name
         if (!customerName) {
             const enteredName = prompt("Customer found by contact details. Please enter customer name:");
             if (enteredName) {
@@ -650,6 +622,7 @@ $(document).ready(function() {
                 const qtyInput = existingRow.find('.quantity');
                 qtyInput.val(parseInt(qtyInput.val()) + 1).trigger('change');
             } else {
+                // Add new product to cart
                 addProductToCart(product);
             }
             
@@ -669,6 +642,7 @@ $(document).ready(function() {
         }
     });
     
+    // Payment status handler
     $('#paymentStatus').change(function() {
         if ($(this).val() === 'paid') {
             $('#amountPaid').val($('#total').val());
@@ -792,6 +766,42 @@ $(document).ready(function() {
         }
     });
     
+    // Keyboard navigation for search results
+    $('#productSearch').keydown(function(e) {
+        if (e.keyCode === 13) { // Enter key
+            e.preventDefault();
+            const firstItem = $('#searchResults .search-item').first();
+            if (firstItem.length) {
+                firstItem.click();
+            }
+        }
+        
+        if (e.keyCode === 40) { // Down arrow
+            e.preventDefault();
+            const firstItem = $('#searchResults .search-item').first();
+            if (firstItem.length) {
+                firstItem.focus().addClass('active');
+            }
+        }
+    });
+    
+    // Handle arrow keys in search results
+    $(document).on('keydown', '.search-item', function(e) {
+        if (e.keyCode === 40) { // Down arrow
+            e.preventDefault();
+            $(this).next('.search-item').focus().addClass('active');
+            $(this).removeClass('active');
+        } else if (e.keyCode === 38) { // Up arrow
+            e.preventDefault();
+            $(this).prev('.search-item').focus().addClass('active');
+            $(this).removeClass('active');
+        } else if (e.keyCode === 13) { // Enter key
+            e.preventDefault();
+            $(this).click();
+        }
+    });
+    
+    // Initialize
     updateTotals();
 });
 </script>
