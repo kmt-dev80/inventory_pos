@@ -55,7 +55,7 @@ $company_name = "Skyneer.it";
 $company_address = "123 Business Street, Chittagong, Bangladesh";
 $company_phone = "+880 1319028680";
 $company_email = "info@skyneer.it.com";
-$company_logo = BASE_URL . "assets/img/logo.png";
+$company_logo = BASE_URL . "assets/img/invpos.gif";
 
 header("Content-Type: text/html; charset=UTF-8");
 ?>
@@ -90,7 +90,7 @@ header("Content-Type: text/html; charset=UTF-8");
             text-align: left;
         }
         .company-info img {
-            max-width: 150px;
+            max-width: 130px;
             max-height: 80px;
         }
         .invoice-info {
@@ -252,11 +252,11 @@ header("Content-Type: text/html; charset=UTF-8");
                     <td><strong>Total Refunded:</strong></td>
                     <td><?= number_format($total_refunded, 2) ?></td>
                 </tr>
-                <?php endif; ?>
                 <tr>
                     <td><strong>Net Paid:</strong></td>
                     <td><?= number_format($net_paid, 2) ?></td>
                 </tr>
+                <?php endif; ?>
                 <tr>
                     <td><strong>Balance Due:</strong></td>
                     <td><?= number_format($balance_due, 2) ?></td>
