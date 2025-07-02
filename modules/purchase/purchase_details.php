@@ -105,7 +105,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     </div>
                                     <div class="card-body">
                                         <p><strong>Reference No:</strong> <?= $purchase->reference_no ?></p>
-                                        <p><strong>Date:</strong> <?= date('d M Y h:i A', strtotime($purchase->purchase_date)) ?></p>
+                                        <p><strong>Date:</strong> <?= date('d M Y h:i A', strtotime($purchase->created_at)) ?></p>
                                         <p><strong>Payment Method:</strong> <?= ucfirst($purchase->payment_method) ?></p>
                                         <p>
                                             <strong>Status:</strong> 

@@ -38,6 +38,7 @@ $items_query = "
            (si.unit_price * (1 - ?) * (1 + ?)) as price_with_vat,
            GROUP_CONCAT(s.id ORDER BY s.created_at ASC) as batch_ids,
            GROUP_CONCAT(s.qty ORDER BY s.created_at ASC) as batch_qtys,
+           GROUP_CONCAT(s.batch_id ORDER BY s.created_at ASC) as purchase_batch_ids,
            GROUP_CONCAT(s.price ORDER BY s.created_at ASC) as batch_prices
     FROM sale_items si
     LEFT JOIN stock s ON s.sale_id = si.sale_id AND s.product_id = si.product_id AND s.change_type = 'sale'
@@ -55,18 +56,20 @@ foreach ($items as &$item) {
     if (!empty($item['batch_ids'])) {
         $batch_ids = explode(',', $item['batch_ids']);
         $batch_qtys = explode(',', $item['batch_qtys']);
+        $purchase_batch_ids = explode(',', $item['purchase_batch_ids']);
         $batch_prices = explode(',', $item['batch_prices']);
         
         for ($i = 0; $i < count($batch_ids); $i++) {
             $item['batches'][] = [
                 'id' => $batch_ids[$i],
-                'qty' => abs($batch_qtys[$i]), // Convert negative sale quantities to positive
+                'purchase_batch_id' => $purchase_batch_ids[$i],
+                'qty' => abs($batch_qtys[$i]),
                 'price' => $batch_prices[$i]
             ];
         }
     }
 }
-unset($item); // Break the reference
+unset($item);
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -78,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         foreach ($_POST['products'] as $product_id => $product) {
             if ($product['return_qty'] > 0) {
-                $total_refund += $product['return_total_with_vat'];
+                $total_refund += floatval($product['return_total_with_vat']);
                 $return_items[$product_id] = $product;
             }
         }
@@ -130,9 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 throw new Exception("Original sale batches not found for product ID: $product_id");
             }
             
-            // Process FIFO restoration - return to original batches
+            // Process FIFO restoration - return to original purchase batches
             $remaining_qty = $product['return_qty'];
-            $total_cost = 0;
             
             foreach ($original_item['batches'] as $batch) {
                 if ($remaining_qty <= 0) break;
@@ -141,21 +143,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $restore_qty = min($remaining_qty, $batch['qty']);
                 $remaining_qty -= $restore_qty;
                 
-                // Record the stock movement (using the selling price but tracking original batch)
+                // Record the stock movement
                 $stock_data = [
                     'product_id' => $product_id,
                     'user_id' => $_SESSION['user']->id,
                     'change_type' => 'sales_return',
                     'qty' => $restore_qty,
-                    'price' => $product['discounted_price'], // Selling price after discount
+                    'price' => $product['discounted_price'],
                     'sales_return_id' => $return_id,
-                    'batch_id' => $batch['id'], // Reference original batch
-                    'note' => 'Sales return',
-                    'created_at' => date('Y-m-d H:i:s')
+                    'batch_id' => $batch['purchase_batch_id'],
+                    'note' => 'Sales return (FIFO)',
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'created_by' => $_SESSION['user']->id
                 ];
                 
                 $stock_result = $mysqli->common_insert('stock', $stock_data);
                 if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
+                
+                // Log the restoration
+                $log_data = [
+                    'user_id' => $_SESSION['user']->id,
+                    'ip_address' => $_SERVER['REMOTE_ADDR'],
+                    'category' => 'stock',
+                    'message' => "Restored $restore_qty to batch ID: {$batch['purchase_batch_id']} for product ID: $product_id, Return ID: $return_id",
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+                $mysqli->common_insert('system_logs', $log_data);
+            }
+            
+            if ($remaining_qty > 0) {
+                throw new Exception("Insufficient batch quantities to restore for product ID: $product_id. Remaining: $remaining_qty");
             }
         }
         
@@ -277,7 +294,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         <tr>
                                             <th>Product</th>
                                             <th>Sold Qty</th>
-                                            <th>Batches</th> <!-- New column for batch info -->
+                                            <th>Batches</th>
                                             <th>Return Qty</th>
                                             <th>Unit Price</th>
                                             <th>Discounted Price</th>
@@ -297,7 +314,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                                     <?php if (!empty($item['batches'])): ?>
                                                         <div class="batch-info">
                                                             <?php foreach ($item['batches'] as $batch): ?>
-                                                                <div>Batch #<?= $batch['id'] ?>: <?= $batch['qty'] ?> @ <?= number_format($batch['price'], 2) ?></div>
+                                                                <div>Batch #<?= $batch['purchase_batch_id'] ?>: <?= $batch['qty'] ?> @ <?= number_format($batch['price'], 2) ?></div>
                                                             <?php endforeach; ?>
                                                         </div>
                                                     <?php else: ?>
@@ -354,7 +371,6 @@ require_once __DIR__ . '/../../requires/topbar.php';
 </div>
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
 <script>
-// JavaScript remains the same
 $(document).ready(function() {
     // Calculate return totals when quantity changes
     $('.return-qty').change(function() {
@@ -379,7 +395,6 @@ $(document).ready(function() {
             total_with_vat += amount;
         });
         
-        // Calculate total VAT by summing all VAT amounts
         $('[name*="[vat_amount]"]').each(function() {
             const vat_per_unit = parseFloat($(this).val()) || 0;
             const qty = parseFloat($(this).closest('tr').find('.return-qty').val()) || 0;

@@ -29,7 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
             
-            
             if (!$customer_id) {
                 $new_customer = [
                     'name' => $_POST['customer_name'] ?: 'Unknown Customer',
@@ -90,27 +89,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 SELECT 
                     p.id, 
                     p.price, 
-                    (p.qty - COALESCE(SUM(s.qty * -1), 0)) AS remaining_qty
+                    (p.qty - COALESCE(SUM(CASE 
+                        WHEN s.change_type = 'sale' THEN -s.qty 
+                        WHEN s.change_type = 'sales_return' THEN s.qty 
+                        ELSE 0 END), 0)) AS remaining_qty
                 FROM stock p
-                LEFT JOIN stock s ON s.batch_id = p.id AND s.change_type = 'sale'
+                LEFT JOIN stock s ON s.batch_id = p.id
                 WHERE p.product_id = ? AND p.change_type = 'purchase'
                 GROUP BY p.id
                 HAVING remaining_qty > 0
                 ORDER BY p.created_at ASC, p.id ASC
             ";
             $stmt = $mysqli->getConnection()->prepare($batch_query);
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . $mysqli->getConnection()->error);
+            }
             $stmt->bind_param('i', $productId);
             $stmt->execute();
             $batches = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
             $totalAvailableStock = array_sum(array_column($batches, 'remaining_qty'));
 
+            // Debug stock calculation
+            $log_data = [
+                'user_id' => $_SESSION['user']->id,
+                'ip_address' => $_SERVER['REMOTE_ADDR'],
+                'category' => 'stock',
+                'message' => "Batch query for product ID: $productId, Query: $batch_query, Available: $totalAvailableStock, Requested: $qtyToSell, Batches: " . json_encode($batches),
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            $mysqli->common_insert('system_logs', $log_data);
+
             if ($totalAvailableStock < $qtyToSell) {
                 throw new Exception("Not enough stock for product ID: $productId. Available: $totalAvailableStock, Requested: $qtyToSell");
             }
 
             // Calculate discounted price per unit
-            $discountedPricePerUnit = ($product['total'] - ($product['total'] * $_POST['discount'] / $_POST['subtotal'])) / $product['quantity'];
+            $subtotal = floatval($_POST['subtotal']);
+            $discount = floatval($_POST['discount']);
+            $discountedPricePerUnit = $subtotal > 0 ? ($product['total'] - ($product['total'] * $discount / $subtotal)) / $product['quantity'] : $product['price'];
 
             // Process FIFO deduction
             $remainingQty = $qtyToSell;
@@ -129,8 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'qty' => -$deductQty,
                     'price' => $discountedPricePerUnit,
                     'sale_id' => $sale_id,
-                    'batch_id' => $batch['id'], // Reference to original batch
-                    'note' => 'POS Sale(FIFO)',
+                    'batch_id' => $batch['id'],
+                    'note' => 'POS Sale (FIFO)',
                     'created_at' => date('Y-m-d H:i:s'),
                     'created_by' => $_SESSION['user']->id
                 ];
@@ -138,8 +155,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $stock_result = $mysqli->common_insert('stock', $stock_data);
                 if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
             }
+
+            if ($remainingQty > 0) {
+                throw new Exception("Insufficient stock allocation for product ID: $productId. Remaining: $remainingQty");
+            }
         }
-                    
         
         if ($_POST['payment_status'] == 'paid' || $_POST['payment_status'] == 'partial') {
             $payment_data = [
@@ -159,57 +179,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $mysqli->commit();
         
-        // Send invoice email if customer email exists and checkbox is checked
-        if (!empty($_POST['customer_email']) && isset($_POST['send_email'])) {
-            // Start output buffering to capture the invoice HTML
-            ob_start();
-            
-            // Set the sale ID in session for the invoice
-            $_SESSION['print_invoice'] = $sale_id;
-            
-            // Include the invoice file which will generate the HTML
-            include __DIR__ . 'print_invoice.php';
-            
-            // Get the captured HTML
-            $invoice_html = ob_get_clean();
-            
-            // Prepare email
-            $invoice_no = $sale_data['invoice_no'];
-            $subject = "Your Invoice #$invoice_no from " . $company_name;
-            
-            $headers = [
-                "From: $company_name <$company_email>",
-                "Reply-To: $company_email",
-                "MIME-Version: 1.0",
-                "Content-Type: text/html; charset=UTF-8"
-            ];
-            
-            // Send email
-            $email_result = $mysqli->sendEmail(
-                $_POST['customer_email'],
-                $subject,
-                $invoice_html,
-                implode("\r\n", $headers)
-            );
-            
-            if ($email_result) {
-                $_SESSION['success'] .= " Invoice has been sent to customer's email.";
-            } else {
-                $_SESSION['error'] = "Sale completed but email could not be sent.";
-            }
-            
-            // Clear the session variable after use
-            unset($_SESSION['print_invoice']);
-        }
-        
         // Redirect to invoice or print
         if (isset($_POST['print_invoice'])) {
             $_SESSION['print_invoice'] = $sale_id;
+            $_SESSION['success'] = "Sale completed successfully! Invoice #" . $sale_data['invoice_no'];
             header("Location: print_invoice.php");
-        } else {
+            exit();
+        } elseif (isset($_POST['save_sale'])) {
+            $_SESSION['success'] = "Sale completed successfully! Invoice #" . $sale_data['invoice_no'];
             header("Location: view_sales.php");
+            exit();
         }
-        exit();
     } catch (Exception $e) {
         $mysqli->rollback();
         $_SESSION['error'] = "Error: " . $e->getMessage();
@@ -226,6 +206,16 @@ $products_with_stock = array_map(function($p) use ($mysqli) {
     $stmt->bind_param('i', $p->id);
     $stmt->execute();
     $stock = $stmt->get_result()->fetch_object()->stock;
+    
+    // Debug stock calculation
+    $log_data = [
+        'user_id' => $_SESSION['user']->id,
+        'ip_address' => $_SERVER['REMOTE_ADDR'],
+        'category' => 'stock',
+        'message' => "Stock calculated for product ID: {$p->id}, Stock: $stock",
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+    $mysqli->common_insert('system_logs', $log_data);
     
     return [
         'id' => $p->id, 
@@ -525,7 +515,6 @@ const customers = <?= json_encode($customers) ?>;
 $(document).ready(function() {
 
     $('#posTbody').before('<div class="alert alert-danger alert-empty-cart">Please add at least one product to complete the sale.</div>');
-    
     
     $('#customerSearch').on('input', function() {
         const searchTerm = $(this).val().trim();

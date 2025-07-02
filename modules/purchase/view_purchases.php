@@ -25,7 +25,7 @@ if ($status && $status !='') {
     $where['payment_status'] = $status;
 }
 
-$purchases_result = $mysqli->common_select('purchase', '*', $where, 'purchase_date','DESC');
+$purchases_result = $mysqli->common_select('purchase', '*', $where, 'created_at','DESC');
 
 if ($purchases_result['error']) {
     // Log error and show empty results
@@ -142,7 +142,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         ?>
                                             <tr>
                                                 <td><?= htmlspecialchars($purchase->reference_no) ?></td>
-                                                <td><?= date('d M Y h:i A', strtotime($purchase->purchase_date)) ?></td>
+                                                <td><?= date('d M Y h:i A', strtotime($purchase->created_at)) ?></td>
                                                 <td><?= $supplier ? htmlspecialchars($supplier->name) : 'N/A' ?></td>
                                                 <td><?= number_format($purchase->total, 2) ?></td>
                                                 <td>
