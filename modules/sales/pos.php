@@ -85,18 +85,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $productId = $product['id'];
 
             // Get all available purchase batches (oldest first) with remaining qty
-            $batch_query = "
+           $batch_query = "
                 SELECT 
                     p.id, 
                     p.price, 
-                    (p.qty - COALESCE(SUM(CASE 
-                        WHEN s.change_type = 'sale' THEN -s.qty 
-                        WHEN s.change_type = 'sales_return' THEN s.qty 
-                        ELSE 0 END), 0)) AS remaining_qty
+                    (p.qty + IFNULL((
+                        SELECT SUM(s.qty) 
+                        FROM stock s 
+                        WHERE s.batch_id = p.id AND s.change_type = 'sales_return'
+                    ), 0) - IFNULL((
+                        SELECT ABS(SUM(s.qty)) 
+                        FROM stock s 
+                        WHERE s.batch_id = p.id AND s.change_type = 'sale'
+                    ), 0)) AS remaining_qty
                 FROM stock p
-                LEFT JOIN stock s ON s.batch_id = p.id
-                WHERE p.product_id = ? AND p.change_type = 'purchase'
-                GROUP BY p.id
+                WHERE p.product_id = ? 
+                AND p.change_type = 'purchase'
                 HAVING remaining_qty > 0
                 ORDER BY p.created_at ASC, p.id ASC
             ";
@@ -154,6 +158,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 $stock_result = $mysqli->common_insert('stock', $stock_data);
                 if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
+
+                // Store batch assignment in sale_items_batches table
+                $batch_assignment = [
+                    'sale_item_id' => $item_result['data'], // The sale_items record ID
+                    'batch_id' => $batch['id'], // The purchase batch ID
+                    'quantity' => $deductQty,
+                    'unit_price' => $discountedPricePerUnit,
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+                $mysqli->common_insert('sale_items_batches', $batch_assignment);
             }
 
             if ($remainingQty > 0) {
@@ -206,16 +220,6 @@ $products_with_stock = array_map(function($p) use ($mysqli) {
     $stmt->bind_param('i', $p->id);
     $stmt->execute();
     $stock = $stmt->get_result()->fetch_object()->stock;
-    
-    // Debug stock calculation
-    $log_data = [
-        'user_id' => $_SESSION['user']->id,
-        'ip_address' => $_SERVER['REMOTE_ADDR'],
-        'category' => 'stock',
-        'message' => "Stock calculated for product ID: {$p->id}, Stock: $stock",
-        'created_at' => date('Y-m-d H:i:s')
-    ];
-    $mysqli->common_insert('system_logs', $log_data);
     
     return [
         'id' => $p->id, 

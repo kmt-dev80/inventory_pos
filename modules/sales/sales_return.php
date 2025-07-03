@@ -33,17 +33,20 @@ $customer = $sale->customer_id ?
 
 // Get sale items with discounted prices and original FIFO batches
 $items_query = "
-    SELECT si.*, 
-           (si.unit_price * (1 - ?)) as discounted_price,
-           (si.unit_price * (1 - ?) * (1 + ?)) as price_with_vat,
-           GROUP_CONCAT(s.id ORDER BY s.created_at ASC) as batch_ids,
-           GROUP_CONCAT(s.qty ORDER BY s.created_at ASC) as batch_qtys,
-           GROUP_CONCAT(s.batch_id ORDER BY s.created_at ASC) as purchase_batch_ids,
-           GROUP_CONCAT(s.price ORDER BY s.created_at ASC) as batch_prices
+    SELECT 
+        si.*,
+        (si.unit_price * (1 - ?)) as discounted_price,
+        (si.unit_price * (1 - ?) * (1 + ?)) as price_with_vat,
+        p.name as product_name,
+        p.barcode as product_barcode,
+        (
+            SELECT GROUP_CONCAT(CONCAT_WS('|', sib.batch_id, sib.quantity, sib.unit_price) ORDER BY sib.id ASC)
+            FROM sale_items_batches sib
+            WHERE sib.sale_item_id = si.id
+        ) as batch_info
     FROM sale_items si
-    LEFT JOIN stock s ON s.sale_id = si.sale_id AND s.product_id = si.product_id AND s.change_type = 'sale'
+    LEFT JOIN products p ON p.id = si.product_id
     WHERE si.sale_id = ?
-    GROUP BY si.id
 ";
 $stmt = $mysqli->getConnection()->prepare($items_query);
 $stmt->bind_param('dddi', $discount_factor, $discount_factor, $vat_factor, $sale_id);
@@ -53,18 +56,14 @@ $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 // Process each item to get FIFO batch details
 foreach ($items as &$item) {
     $item['batches'] = [];
-    if (!empty($item['batch_ids'])) {
-        $batch_ids = explode(',', $item['batch_ids']);
-        $batch_qtys = explode(',', $item['batch_qtys']);
-        $purchase_batch_ids = explode(',', $item['purchase_batch_ids']);
-        $batch_prices = explode(',', $item['batch_prices']);
-        
-        for ($i = 0; $i < count($batch_ids); $i++) {
+    if (!empty($item['batch_info'])) {
+        $batch_entries = explode(',', $item['batch_info']);
+        foreach ($batch_entries as $entry) {
+            list($batch_id, $qty, $price) = explode('|', $entry);
             $item['batches'][] = [
-                'id' => $batch_ids[$i],
-                'purchase_batch_id' => $purchase_batch_ids[$i],
-                'qty' => abs($batch_qtys[$i]),
-                'price' => $batch_prices[$i]
+                'batch_id' => $batch_id,
+                'quantity' => $qty,
+                'unit_price' => $price
             ];
         }
     }
@@ -86,6 +85,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
+        if (empty($return_items)) {
+            throw new Exception("No items selected for return");
+        }
+
         // Create return record
         $return_data = [
             'sale_id' => $sale_id,
@@ -105,6 +108,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         // Process each returned item with FIFO restoration
         foreach ($return_items as $product_id => $product) {
+            // Find the original item
+            $original_item = null;
+            foreach ($items as $item) {
+                if ($item['product_id'] == $product_id) {
+                    $original_item = $item;
+                    break;
+                }
+            }
+            
+            if (!$original_item) {
+                throw new Exception("Original sale item not found for product ID: $product_id");
+            }
+            
+            // Create return item record
             $item_data = [
                 'sales_return_id' => $return_id,
                 'product_id' => $product_id,
@@ -120,27 +137,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $item_result = $mysqli->common_insert('sales_return_items', $item_data);
             if ($item_result['error']) throw new Exception($item_result['error_msg']);
             
-            // Find the original item to get FIFO batch info
-            $original_item = null;
-            foreach ($items as $item) {
-                if ($item['product_id'] == $product_id) {
-                    $original_item = $item;
-                    break;
-                }
-            }
+            $return_item_id = $item_result['data'];
             
-            if (!$original_item || empty($original_item['batches'])) {
-                throw new Exception("Original sale batches not found for product ID: $product_id");
-            }
-            
-            // Process FIFO restoration - return to original purchase batches
+            // Process FIFO restoration - return to original purchase batches (LIFO for returns)
             $remaining_qty = $product['return_qty'];
+            $batches = array_reverse($original_item['batches']); // Reverse for LIFO return
             
-            foreach ($original_item['batches'] as $batch) {
+            foreach ($batches as $batch) {
                 if ($remaining_qty <= 0) break;
                 
                 // Determine how much to return to this batch
-                $restore_qty = min($remaining_qty, $batch['qty']);
+                $restore_qty = min($remaining_qty, $batch['quantity']);
                 $remaining_qty -= $restore_qty;
                 
                 // Record the stock movement
@@ -149,9 +156,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'user_id' => $_SESSION['user']->id,
                     'change_type' => 'sales_return',
                     'qty' => $restore_qty,
-                    'price' => $product['discounted_price'],
+                    'price' => $batch['unit_price'],
                     'sales_return_id' => $return_id,
-                    'batch_id' => $batch['purchase_batch_id'],
+                    'batch_id' => $batch['batch_id'],
                     'note' => 'Sales return (FIFO)',
                     'created_at' => date('Y-m-d H:i:s'),
                     'created_by' => $_SESSION['user']->id
@@ -160,15 +167,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $stock_result = $mysqli->common_insert('stock', $stock_data);
                 if ($stock_result['error']) throw new Exception($stock_result['error_msg']);
                 
-                // Log the restoration
-                $log_data = [
-                    'user_id' => $_SESSION['user']->id,
-                    'ip_address' => $_SERVER['REMOTE_ADDR'],
-                    'category' => 'stock',
-                    'message' => "Restored $restore_qty to batch ID: {$batch['purchase_batch_id']} for product ID: $product_id, Return ID: $return_id",
+                // Record batch assignment for the return
+                $batch_assignment = [
+                    'return_item_id' => $return_item_id,
+                    'batch_id' => $batch['batch_id'],
+                    'quantity' => $restore_qty,
+                    'unit_price' => $batch['unit_price'],
                     'created_at' => date('Y-m-d H:i:s')
                 ];
-                $mysqli->common_insert('system_logs', $log_data);
+                $mysqli->common_insert('return_items_batches', $batch_assignment);
             }
             
             if ($remaining_qty > 0) {
@@ -304,17 +311,16 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     </thead>
                                     <tbody>
                                         <?php foreach ($items as $item): 
-                                            $product = $mysqli->common_select('products', '*', ['id' => $item['product_id']])['data'][0] ?? null;
                                             $vat_amount_per_unit = $item['price_with_vat'] - $item['discounted_price'];
                                         ?>
                                             <tr>
-                                                <td><?= $product ? $product->name . ' (' . $product->barcode . ')' : 'Product not found' ?></td>
+                                                <td><?= $item['product_name'] ?> (<?= $item['product_barcode'] ?>)</td>
                                                 <td><?= $item['quantity'] ?></td>
                                                 <td>
                                                     <?php if (!empty($item['batches'])): ?>
                                                         <div class="batch-info">
                                                             <?php foreach ($item['batches'] as $batch): ?>
-                                                                <div>Batch #<?= $batch['purchase_batch_id'] ?>: <?= $batch['qty'] ?> @ <?= number_format($batch['price'], 2) ?></div>
+                                                                <div>Batch #<?= $batch['batch_id'] ?>: <?= $batch['quantity'] ?> @ <?= number_format($batch['unit_price'], 2) ?></div>
                                                             <?php endforeach; ?>
                                                         </div>
                                                     <?php else: ?>

@@ -127,8 +127,9 @@ require_once __DIR__ . '/../../requires/topbar.php';
 $(document).ready(function() {
     $('#stockReportTable').DataTable({
         dom: 'lBfrtip',
+        order: [[0, 'desc']],
         buttons: [
-            'csv', 'excel', 'pdf', 'print'
+            'csv', 'excel', 'pdf'
         ],
         footerCallback: function (row, data, start, end, display) {
             var api = this.api();

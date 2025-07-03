@@ -265,10 +265,11 @@
 
 <script>
   $(document).ready(function() {
-    ['#productTable', '#stockTable', '#purchasesTable', '#returnsTable', '#salesTable', '#salesReport', '#salesReturnsTable','#lowStockTable'].forEach(function(id) {
+    ['#productTable', '#purchasesTable', '#returnsTable', '#salesTable', '#salesReport', '#salesReturnsTable'].forEach(function(id) {
         $(id).DataTable({
             dom: 'lBfrtip',
-            buttons: ['csv', 'excel', 'pdf', 'print']
+            buttons: ['csv', 'excel', 'pdf', 'print'],
+            order: [[1, 'desc']]
         });
     });
     $('#trashTable').DataTable();

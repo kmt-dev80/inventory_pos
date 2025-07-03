@@ -21,8 +21,6 @@ if($product['error'] || empty($product['data'])) {
 }
 $product = $product['data'][0];
 
-$title = "Stock History - " . htmlspecialchars($product->name);
-
 // Get stock history for this product
 $query = "SELECT s.*, u.full_name as user_name 
           FROM stock s 
@@ -141,7 +139,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
 <script>
 $(document).ready(function() {
     $('#productHistoryTable').DataTable({
-        order: [[5, 'desc']]
+        order: [[0, 'desc']]
     });
 });
 </script>

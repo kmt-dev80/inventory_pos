@@ -136,8 +136,8 @@ require_once __DIR__ . '/../../requires/topbar.php';
                             <table class="table table-striped" id="returnsTable">
                                 <thead>
                                     <tr>
-                                        <th>Return Date</th>
                                         <th>Purchase Ref</th>
+                                        <th>Return Date</th>
                                         <th>Supplier</th>
                                         <th>Reason</th>
                                         <th>Refund Amount</th>
@@ -157,8 +157,8 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     <?php else: ?>
                                     <?php foreach ($returns as $return): ?>
                                         <tr>
+                                             <td><?= $return['reference_no'] ?></td>
                                             <td><?= date('d M Y h:i A', strtotime($return['created_at'])) ?></td>
-                                            <td><?= $return['reference_no'] ?></td>
                                             <td><?= $return['supplier_name'] ?></td>
                                             <td><?= ucfirst(str_replace('_', ' ', $return['return_reason'])) ?></td>
                                             <td><?= number_format($return['refund_amount'], 2) ?></td>
