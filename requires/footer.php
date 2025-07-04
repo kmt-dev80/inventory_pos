@@ -3,7 +3,7 @@
           <nav class="pull-left">
             <ul class="nav">
               <li class="nav-item">
-                <a class="nav-link" href="http://localhost/inventory_pos/">
+                <a class="nav-link" href="http://inventory-pos.wdpfctg.site/">
                   Inventory-pos
                 </a>
               </li>
@@ -21,7 +21,7 @@
           </div>
           <div>
             Distributed by
-            <a target="_blank" href="http://localhost/inventory_pos/">WDPF64</a>.
+            <a target="_blank" href="http://inventory-pos.wdpfctg.site/">WDPF64</a>.
           </div>
         </div>
     </footer>
@@ -265,11 +265,11 @@
 
 <script>
   $(document).ready(function() {
-    ['#productTable', '#purchasesTable', '#returnsTable', '#salesTable', '#salesReport', '#salesReturnsTable'].forEach(function(id) {
+    ['#productTable', '#lowStockTable', '#profitLossTable', '#adjustmentsTable', '#purchasesTable', '#returnsTable', '#salesTable', '#salesReport', '#salesReturnsTable'].forEach(function(id) {
         $(id).DataTable({
             dom: 'lBfrtip',
             buttons: ['csv', 'excel', 'pdf', 'print'],
-            order: [[1, 'desc']]
+            order: [[0, 'asc']]
         });
     });
     $('#trashTable').DataTable();

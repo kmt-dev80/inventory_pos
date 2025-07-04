@@ -124,9 +124,14 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         <input type="date" class="form-control" name="end_date" value="<?= $end_date ?>">
                                     </div>
                                 </div>
-                                <div class="col-md-3 align-self-end">
-                                    <button type="submit" class="btn btn-primary">Filter</button>
-                                    <a href="view_purchase_returns.php" class="btn btn-secondary">Reset</a>
+                                <div class="col-md-5 d-flex justify-content-end">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label> <!-- Space for alignment -->
+                                        <div>
+                                            <button type="submit" class="btn btn-primary">Filter</button>
+                                            <a href="view_purchase_returns.php" class="btn btn-secondary">Reset</a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -136,6 +141,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                             <table class="table table-striped" id="returnsTable">
                                 <thead>
                                     <tr>
+                                        <th>#</th>
                                         <th>Purchase Ref</th>
                                         <th>Return Date</th>
                                         <th>Supplier</th>
@@ -155,9 +161,10 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                             </td>
                                         </tr>
                                     <?php else: ?>
-                                    <?php foreach ($returns as $return): ?>
+                                    <?php foreach ($returns as $index=> $return): ?>
                                         <tr>
-                                             <td><?= $return['reference_no'] ?></td>
+                                            <td><?= $index + 1 ?></td>
+                                            <td><?= $return['reference_no'] ?></td>
                                             <td><?= date('d M Y h:i A', strtotime($return['created_at'])) ?></td>
                                             <td><?= $return['supplier_name'] ?></td>
                                             <td><?= ucfirst(str_replace('_', ' ', $return['return_reason'])) ?></td>
@@ -181,4 +188,4 @@ require_once __DIR__ . '/../../requires/topbar.php';
         </div>
     </div>
 </div>
-<?php include __DIR__ . '/../../requires/footer.php'; ?>
+<?php require_once __DIR__ . '/../../requires/footer.php'; ?>

@@ -85,11 +85,3 @@ require_once __DIR__ . '/../../requires/topbar.php';
 </div>
 
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
-
-<script>
-$(document).ready(function() {
-    $('#adjustmentsTable').DataTable({
-        order: [[1, 'desc']]
-    });
-});
-</script>

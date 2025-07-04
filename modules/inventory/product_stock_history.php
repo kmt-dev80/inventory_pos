@@ -139,6 +139,8 @@ require_once __DIR__ . '/../../requires/topbar.php';
 <script>
 $(document).ready(function() {
     $('#productHistoryTable').DataTable({
+        dom: 'lBfrtip',
+        buttons: ['csv', 'excel', 'pdf', 'print'],
         order: [[0, 'desc']]
     });
 });

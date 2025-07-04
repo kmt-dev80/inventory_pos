@@ -113,10 +113,15 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-3 align-self-end">
-                                    <button type="submit" class="btn btn-primary">Filter</button>
-                                    <a href="view_purchases.php" class="btn btn-secondary">Reset</a>
-                                    <a href="add_purchase.php" class="btn btn-success">Add Purchase</a>
+                                <div class="col-md-3 d-flex justify-content-end">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label> <!-- Space for alignment -->
+                                        <div>
+                                            <button type="submit" class="btn btn-primary">Filter</button>
+                                            <a href="view_purchases.php" class="btn btn-secondary">Reset</a>
+                                            <a href="add_purchase.php" class="btn btn-success">Add Purchase</a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -126,6 +131,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                             <table class="table table-striped" id="purchasesTable">
                                 <thead>
                                     <tr>
+                                        <th>#</th>
                                         <th>Reference</th>
                                         <th>Date</th>
                                         <th>Supplier</th>
@@ -137,10 +143,11 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                 </thead>
                                 <tbody>
                                     <?php if (!empty($purchases)): ?>
-                                        <?php foreach ($purchases as $purchase): 
+                                        <?php foreach ($purchases as $index=> $purchase): 
                                             $supplier = $mysqli->common_select('suppliers', '*', ['id' => $purchase->supplier_id])['data'][0] ?? null;
                                         ?>
                                             <tr>
+                                                <td><?= $index + 1 ?></td>
                                                 <td><?= htmlspecialchars($purchase->reference_no) ?></td>
                                                 <td><?= date('d M Y h:i A', strtotime($purchase->created_at)) ?></td>
                                                 <td><?= $supplier ? htmlspecialchars($supplier->name) : 'N/A' ?></td>

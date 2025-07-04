@@ -69,7 +69,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                 </div>
                                 <div class="form-group">
                                     <label>Return Date:</label>
-                                    <p class="form-control-static"><?= date('d M Y', strtotime($return_header->created_at)) ?></p>
+                                    <p class="form-control-static"><?= date('d M Y h:i A', strtotime($return_header->created_at)) ?></p>
                                 </div>
                                 <div class="form-group">
                                     <label>Return Reason:</label>

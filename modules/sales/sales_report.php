@@ -8,8 +8,8 @@ require_once __DIR__ . '/../../db_plugin.php';
 
 // Get filter parameters
 $customer_id = $_GET['customer_id'] ?? '';
-$start_date = $_GET['start_date'] ?? date('Y-m-01');
-$end_date = $_GET['end_date'] ?? date('Y-m-d');
+$start_date = !empty($_GET['start_date']) ? $_GET['start_date'] : '2025-01-01';
+$end_date   = !empty($_GET['end_date'])   ? $_GET['end_date']   : date('Y-m-t');
 $payment_status = $_GET['payment_status'] ?? '';
 
 // Build where conditions
@@ -125,9 +125,14 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-3 align-self-end">
-                                    <button type="submit" class="btn btn-primary">Filter</button>
-                                    <a href="sales_report.php" class="btn btn-secondary">Reset</a>
+                                <div class="col-md-3 d-flex justify-content-end">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <div>
+                                           <button type="submit" class="btn btn-primary">Filter</button>
+                                           <a href="sales_report.php" class="btn btn-secondary">Reset</a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -173,6 +178,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                             <table class="table table-striped" id="salesReport">
                                 <thead>
                                     <tr>
+                                        <th>#</th>
                                         <th>Invoice No</th>
                                         <th>Date</th>
                                         <th>Customer</th>
@@ -185,7 +191,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($sales as $sale): 
+                                    <?php foreach ($sales as $index=> $sale): 
                                         $customer = $sale->customer_id ? 
                                             $mysqli->common_select('customers', '*', ['id' => $sale->customer_id])['data'][0] : null;
                                         
@@ -206,6 +212,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         $due = max(0, $sale->total - $paid);
                                     ?>
                                         <tr>
+                                            <td><?= $index + 1 ?></td>
                                             <td><?= $sale->invoice_no ?></td>
                                             <td><?= date('d M Y h:i A', strtotime($sale->created_at)) ?></td>
                                             <td><?= $customer ? $customer->name : ($sale->customer_name ?: 'Walk-in') ?></td>

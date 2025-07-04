@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../db_plugin.php';
 
 // Get filter parameters
 $customer_id = $_GET['customer_id'] ?? '';
-$start_date = $_GET['start_date'] ?? date('Y-01-01');
+$start_date = $_GET['start_date'] ?? '2025-01-01';
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 $status = $_GET['status'] ?? '';
 
@@ -103,10 +103,15 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-3 align-self-end">
-                                    <button type="submit" class="btn btn-primary">Filter</button>
-                                    <a href="view_sales.php" class="btn btn-secondary">Reset</a>
-                                    <a href="pos.php" class="btn btn-success">New POS Sale</a>
+                                <div class="col-md-3 d-flex justify-content-end">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label> <!-- Space for alignment -->
+                                        <div>
+                                            <button type="submit" class="btn btn-primary">Filter</button>
+                                            <a href="view_sales.php" class="btn btn-secondary">Reset</a>
+                                            <a href="pos.php" class="btn btn-success">New POS Sale</a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -116,6 +121,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
                             <table class="table table-striped" id="salesTable">
                                 <thead>
                                     <tr>
+                                        <th>#</th>
                                         <th>Invoice No</th>
                                         <th>Date</th>
                                         <th>Customer</th>
@@ -131,11 +137,12 @@ require_once __DIR__ . '/../../requires/topbar.php';
                                             <td colspan="7" class="text-center">No sales found for the selected criteria</td>
                                         </tr>
                                     <?php else: ?>
-                                        <?php foreach ($sales as $sale): 
+                                        <?php foreach ($sales as $index=> $sale): 
                                             $customer = $sale->customer_id ? 
                                                 $mysqli->common_select('customers', 'name, phone', ['id' => $sale->customer_id])['data'][0] : null;
                                         ?>
                                             <tr>
+                                                <td><?= $index + 1 ?></td>
                                                 <td><?= htmlspecialchars($sale->invoice_no) ?></td>
                                                 <td><?= date('d M Y h:i A', strtotime($sale->created_at)) ?></td>
                                                 <td><?= htmlspecialchars($customer ? $customer->name : ($sale->customer_name ?: 'Walk-in')) ?></td>

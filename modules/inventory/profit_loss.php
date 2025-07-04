@@ -6,8 +6,9 @@ if (!isset($_SESSION['log_user_status']) || $_SESSION['log_user_status'] !== tru
 }
 require_once __DIR__ . '/../../db_plugin.php';
 
-$start_date = $_GET['start_date'] ?? date('Y-01-01');
-$end_date = $_GET['end_date'] ?? date('Y-m-t');
+$start_date = !empty($_GET['start_date']) ? $_GET['start_date'] : '2025-01-01';
+$end_date   = !empty($_GET['end_date'])   ? $_GET['end_date']   : date('Y-m-t');
+
 
 /**
  * Calculates COGS using FIFO (First-In-First-Out) method
@@ -308,7 +309,7 @@ require_once __DIR__ . '/../../requires/topbar.php';
 
 <div class="container">
     <div class="page-inner">
-         <div class="page-header">
+        <div class="page-header">
             <div class="row align-items-center">
                 <div>
                     <h3 class="page-title">Profit & Loss Report</h3>
@@ -325,31 +326,33 @@ require_once __DIR__ . '/../../requires/topbar.php';
                 <div class="card">
                     <div class="card-header">
                         <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <h5 class="card-title mb-0">Detailed Stock Movement & Profit Report</h5>
-                            </div>
-                            <div class="col-md-6">
-                                <form method="GET" class="row align-items-center">
-                                    <div class="col-auto">
-                                        <div class="form-group mb-0">
-                                            <label class="mr-2">From</label>
-                                            <input type="date" name="start_date" value="<?= $start_date ?>" class="form-control form-control">
-                                        </div>
+                            <form method="GET" class="row align-items-center">
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <h5 class="card-title mb-0">Detailed Stock Movement & Profit Report</h5>
+                                    </div>    
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>From</label>
+                                        <input type="date" class="form-control" name="start_date" value="<?= $start_date ?>">
                                     </div>
-                                    <div class="col-auto">
-                                        <div class="form-group mb-0">
-                                            <label class="mr-2">To</label>
-                                            <input type="date" name="end_date" value="<?= $end_date ?>" class="form-control form-control">
-                                        </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>To</label>
+                                        <input type="date" class="form-control" name="end_date" value="<?= $end_date ?>">
                                     </div>
-                                    <div class="col-auto">
+                                </div>
+                                <div class="col-md-3 d-flex justify-content-end">
+                                <div class="form-group">
+                                    <label>&nbsp;</label> <!-- Space for alignment -->
+                                    <div>
                                         <button type="submit" class="btn btn-primary">Filter</button>
+                                        <a href="profit_loss.php" class="btn btn-secondary">Reset</a>
                                     </div>
-                                    <div class="col-auto">
-                                       <a href="profit_loss.php" class="btn btn-secondary">Reset</a>
-                                    </div>
-                                </form>
-                            </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
                     <div class="card-body">
@@ -486,18 +489,3 @@ require_once __DIR__ . '/../../requires/topbar.php';
 </div>
 
 <?php require_once __DIR__ . '/../../requires/footer.php'; ?>
-
-<script>
-$(document).ready(function() {
-    $('#profitLossTable').DataTable({
-        dom: 'lBfrtip',
-        buttons: [
-            'copy', 'csv', 'excel', 'pdf', 'print'
-        ],
-        order: [[15, 'desc']], // Sort by Profit by default
-        pageLength: 25,
-        scrollX: true,
-        responsive: true
-    });
-});
-</script>
